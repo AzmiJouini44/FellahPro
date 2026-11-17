@@ -45,6 +45,12 @@ management is owner-only. RLS helper functions are `security definer` functions
 with a fixed `search_path` so policies can check membership without recursively
 querying `farm_members` under its own policy.
 
+For Mission 1, all three member roles can create, update, and delete operational
+farm data; only owners can edit the farm or its membership. Finer worker and
+accountant permissions are deferred until those workflows exist. Audit
+`created_by` fields cannot be reassigned after insertion, and a transaction can
+only be inserted with the current user as its creator.
+
 Profiles are readable by the profile owner and by people who share a farm with
 that profile. A signup trigger creates the matching profile automatically.
 

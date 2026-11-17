@@ -289,6 +289,20 @@ begin
 end;
 $$;
 
+create or replace function public.prevent_created_by_change()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.created_by is distinct from old.created_by then
+    raise exception 'created_by cannot be changed';
+  end if;
+
+  return new;
+end;
+$$;
+
 do $$
 declare
   table_name text;
@@ -307,6 +321,14 @@ begin
   end loop;
 end;
 $$;
+
+create trigger protect_farm_created_by
+  before update on public.farms
+  for each row execute function public.prevent_created_by_change();
+
+create trigger protect_transaction_created_by
+  before update on public.transactions
+  for each row execute function public.prevent_created_by_change();
 
 -- Create a profile for every Auth user. Metadata is optional and untrusted.
 create or replace function public.handle_new_user()
@@ -498,7 +520,7 @@ declare
 begin
   foreach table_name in array array[
     'activities', 'plots', 'crop_cycles', 'animal_groups', 'animal_events',
-    'parties', 'products', 'inventory_movements', 'transactions',
+    'parties', 'products', 'inventory_movements',
     'transaction_lines', 'payments', 'tasks'
   ]
   loop
@@ -526,6 +548,26 @@ begin
   end loop;
 end;
 $$;
+
+create policy "members can read transactions"
+  on public.transactions for select to authenticated
+  using (public.is_farm_member(farm_id));
+
+create policy "members can create their transactions"
+  on public.transactions for insert to authenticated
+  with check (
+    public.is_farm_member(farm_id)
+    and created_by = (select auth.uid())
+  );
+
+create policy "members can update transactions"
+  on public.transactions for update to authenticated
+  using (public.is_farm_member(farm_id))
+  with check (public.is_farm_member(farm_id));
+
+create policy "members can delete transactions"
+  on public.transactions for delete to authenticated
+  using (public.is_farm_member(farm_id));
 
 -- Financial views are authoritative for application and future AI consumers.
 create view public.v_activity_pnl
