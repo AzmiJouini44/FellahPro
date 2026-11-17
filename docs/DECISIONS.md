@@ -63,6 +63,11 @@ owner, serializing concurrent attempts. Deleting a farm is explicitly allowed:
 once the parent farm row has been deleted, its membership cascade no longer
 needs to preserve an owner.
 
+An owner may demote themselves when another owner remains. The role change takes
+effect immediately, so the demoted member loses owner-only permissions and must
+ask a remaining owner to promote them again. Self-demotion is rejected when it
+would remove the farm's last owner.
+
 Deleting an Auth account cascades through its profile and memberships, but an
 account deletion is rejected if that profile is the sole owner of any existing
 farm. The owner must first add or promote another owner, or delete the farm.

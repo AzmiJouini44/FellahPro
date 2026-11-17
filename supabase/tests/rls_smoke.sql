@@ -79,6 +79,77 @@ values (
   'commerce'
 );
 
+insert into public.plots (id, farm_id, activity_id, name, area_hectares)
+values (
+  '31000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  '30000000-0000-0000-0000-000000000001',
+  'Farm A plot',
+  1.5
+);
+
+insert into public.crop_cycles (
+  id,
+  farm_id,
+  activity_id,
+  plot_id,
+  crop_name,
+  started_on,
+  status
+)
+values (
+  '32000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  '30000000-0000-0000-0000-000000000001',
+  '31000000-0000-0000-0000-000000000001',
+  'Farm A crop',
+  '2026-01-01',
+  'active'
+);
+
+insert into public.animal_groups (
+  id,
+  farm_id,
+  activity_id,
+  name,
+  species,
+  opening_count
+)
+values (
+  '33000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  '30000000-0000-0000-0000-000000000001',
+  'Farm A herd',
+  'bovin',
+  4
+);
+
+insert into public.animal_events (
+  id,
+  farm_id,
+  animal_group_id,
+  kind,
+  quantity,
+  notes
+)
+values (
+  '34000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  '33000000-0000-0000-0000-000000000001',
+  'achat',
+  2,
+  'Farm A animal event'
+);
+
+insert into public.parties (id, farm_id, name, kind, phone)
+values (
+  '35000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  'Farm A customer',
+  'client',
+  '+21600000000'
+);
+
 insert into public.products (id, farm_id, name, minimum_stock)
 values (
   '40000000-0000-0000-0000-000000000001',
@@ -191,6 +262,21 @@ begin
     select 1 from public.products
     where farm_id = '20000000-0000-0000-0000-000000000001'
   ) or exists (
+    select 1 from public.plots
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.crop_cycles
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.animal_groups
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.animal_events
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.parties
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
     select 1 from public.transactions
     where farm_id = '20000000-0000-0000-0000-000000000001'
   ) or exists (
@@ -217,6 +303,81 @@ begin
 
   if changed_rows <> 0 then
     raise exception 'farm B owner changed a farm A membership role';
+  end if;
+
+  update public.plots
+  set name = 'Farm B update'
+  where id = '31000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner updated a farm A plot';
+  end if;
+
+  update public.crop_cycles
+  set crop_name = 'Farm B update'
+  where id = '32000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner updated a farm A crop cycle';
+  end if;
+
+  update public.animal_groups
+  set name = 'Farm B update'
+  where id = '33000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner updated a farm A animal group';
+  end if;
+
+  update public.animal_events
+  set notes = 'Farm B update'
+  where id = '34000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner updated a farm A animal event';
+  end if;
+
+  update public.parties
+  set phone = '+21611111111'
+  where id = '35000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner updated a farm A party';
+  end if;
+
+  delete from public.animal_events
+  where id = '34000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner deleted a farm A animal event';
+  end if;
+
+  delete from public.crop_cycles
+  where id = '32000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner deleted a farm A crop cycle';
+  end if;
+
+  delete from public.plots
+  where id = '31000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner deleted a farm A plot';
+  end if;
+
+  delete from public.animal_groups
+  where id = '33000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner deleted a farm A animal group';
+  end if;
+
+  delete from public.parties
+  where id = '35000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'farm B owner deleted a farm A party';
   end if;
 end;
 $$;
@@ -351,6 +512,54 @@ begin
   set role = 'worker'
   where farm_id = '20000000-0000-0000-0000-000000000001'
     and user_id = '10000000-0000-0000-0000-000000000003';
+
+  -- Self-demotion is allowed because the second owner remains. The caller
+  -- immediately loses owner-only permissions and needs another owner to be
+  -- promoted again.
+  update public.farm_members
+  set role = 'accountant'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 1 or not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000001'
+      and role = 'accountant'
+  ) or not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000004'
+      and role = 'owner'
+  ) then
+    raise exception 'owner could not demote themselves while another owner remained';
+  end if;
+end;
+$$;
+
+-- The remaining owner can promote the self-demoted member again.
+set local request.jwt.claims =
+  '{"sub":"10000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+do $$
+declare
+  changed_rows integer;
+begin
+  update public.farm_members
+  set role = 'owner'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000001';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 1 or not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000001'
+      and role = 'owner'
+  ) then
+    raise exception 'remaining owner could not restore a self-demoted owner';
+  end if;
 end;
 $$;
 
