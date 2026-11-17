@@ -26,7 +26,7 @@ export async function GET(
 
   const destination = error
     ? `/${locale}/login?error=confirmation_failed`
-    : `/${locale}/login?success=confirmed`;
+    : `/${locale}/app`;
 
   return NextResponse.redirect(new URL(destination, request.url));
 }

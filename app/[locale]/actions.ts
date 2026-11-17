@@ -1,31 +1,37 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+import { requireAuthenticatedContext } from "@/lib/auth";
+import {
+  cleanText,
+  isValidEmail,
+  isValidFarmName,
+  isValidPassword,
+  isValidPersonName,
+} from "@/lib/validation";
 import { createClient } from "@/utils/supabase/server";
 
-function getString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
+export type OnboardingActionState = {
+  message: string | null;
+};
 
 function getLocale(formData: FormData): Locale {
-  const locale = getString(formData, "locale");
+  const locale = cleanText(formData.get("locale"));
   return isLocale(locale) ? locale : defaultLocale;
-}
-
-function isEmail(value: string) {
-  return /^\S+@\S+\.\S+$/.test(value);
 }
 
 export async function login(formData: FormData) {
   const locale = getLocale(formData);
-  const email = getString(formData, "email");
-  const password = getString(formData, "password");
+  const email = cleanText(formData.get("email")).toLowerCase();
+  const passwordValue = formData.get("password");
+  const password = typeof passwordValue === "string" ? passwordValue : "";
 
-  if (!isEmail(email) || password.length < 8) {
+  if (!isValidEmail(email) || !isValidPassword(password)) {
     redirect(`/${locale}/login?error=invalid_form`);
   }
 
@@ -41,11 +47,16 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
   const locale = getLocale(formData);
-  const fullName = getString(formData, "fullName");
-  const email = getString(formData, "email");
-  const password = getString(formData, "password");
+  const fullName = cleanText(formData.get("fullName"));
+  const email = cleanText(formData.get("email")).toLowerCase();
+  const passwordValue = formData.get("password");
+  const password = typeof passwordValue === "string" ? passwordValue : "";
 
-  if (fullName.length < 2 || !isEmail(email) || password.length < 8) {
+  if (
+    !isValidPersonName(fullName) ||
+    !isValidEmail(email) ||
+    !isValidPassword(password)
+  ) {
     redirect(`/${locale}/signup?error=invalid_form`);
   }
 
@@ -66,7 +77,7 @@ export async function signup(formData: FormData) {
   }
 
   if (data.session) {
-    redirect(`/${locale}/app`);
+    redirect(`/${locale}/onboarding`);
   }
 
   redirect(`/${locale}/login?success=check_email`);
@@ -77,4 +88,60 @@ export async function logout(formData: FormData) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect(`/${locale}/login`);
+}
+
+export async function createFirstFarm(
+  _previousState: OnboardingActionState,
+  formData: FormData,
+): Promise<OnboardingActionState> {
+  const locale = getLocale(formData);
+  const dictionary = getDictionary(locale);
+  const fullName = cleanText(formData.get("fullName"));
+  const farmName = cleanText(formData.get("farmName"));
+
+  if (!isValidPersonName(fullName) || !isValidFarmName(farmName)) {
+    return { message: dictionary.onboarding.messages.invalidForm };
+  }
+
+  const { supabase, user } = await requireAuthenticatedContext(locale);
+  const existingFarm = await supabase
+    .from("farms")
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (existingFarm.error) {
+    return { message: dictionary.onboarding.messages.loadFailed };
+  }
+
+  if (existingFarm.data) {
+    redirect(`/${locale}/app`);
+  }
+
+  const { error: profileError } = await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      full_name: fullName,
+      locale,
+    },
+    { onConflict: "id" },
+  );
+
+  if (profileError) {
+    return { message: dictionary.onboarding.messages.profileFailed };
+  }
+
+  const { error: farmError } = await supabase.from("farms").insert({
+    name: farmName,
+    currency: "TND",
+  });
+
+  if (farmError) {
+    return { message: dictionary.onboarding.messages.farmFailed };
+  }
+
+  revalidatePath(`/${locale}/app`);
+  revalidatePath(`/${locale}/onboarding`);
+  redirect(`/${locale}/app`);
 }

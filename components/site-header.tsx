@@ -21,8 +21,12 @@ export function SiteHeader({ locale, isAuthenticated = false }: SiteHeaderProps)
           </span>
           <span>FellahPro</span>
         </Link>
-        <nav className="header-actions" aria-label="Navigation principale">
-          <Link className="language-link" href={`/${alternateLocale}`}>
+        <nav className="header-actions" aria-label={dictionary.nav.mainLabel}>
+          <Link
+            className="language-link"
+            href={`/${alternateLocale}`}
+            aria-label={dictionary.nav.languageLabel}
+          >
             {dictionary.nav.language}
           </Link>
           <Link

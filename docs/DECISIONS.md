@@ -96,22 +96,42 @@ schema, while care and miscellaneous events are non-population events.
 
 Authentication uses Supabase email/password with cookie-backed browser and
 server clients from `@supabase/ssr`. Next.js 16 `proxy.ts` refreshes tokens and
-performs only an optimistic protected-route redirect; protected pages also
-verify the user on the server.
+performs only an optimistic protected-route redirect. Protected layouts, data
+loaders, and server actions verify signed claims on the server near data access.
+User identifiers are derived from those claims rather than accepted from forms.
 
 Routes use a required locale prefix (`/fr` and `/ar`) with French as the default.
 Small server-side dictionaries avoid adding a localization dependency for the
-initial auth-only surface. The locale layout sets both `lang` and `dir`, so
-Arabic renders right-to-left when its translations are expanded.
+initial application surface. The locale layout sets both `lang` and `dir`, so
+Arabic renders right-to-left. Currency display uses `Intl.NumberFormat` with
+the selected Tunisian locale and TND's three fractional digits.
 
 Email confirmation behavior follows the Supabase project's Auth setting. After
 signup, FellahPro shows a neutral confirmation message whether a session is
 created immediately or email verification is required.
 
+## First-farm onboarding
+
+The Auth signup trigger remains the primary way profiles are created. A narrow
+insert policy also lets an authenticated user create only their own missing
+profile, which supports onboarding for legacy or partially provisioned Auth
+accounts without a service-role client. Existing profile update RLS remains in
+force.
+
+The first farm is inserted through the signed-in user's regular Supabase client.
+The application does not set `created_by` or insert an owner membership itself:
+the database derives the creator from `auth.uid()` and the existing Mission 1
+trigger creates the owner membership. This keeps authorization and the
+ownership invariant in the database and leaves RLS enabled throughout.
+
+The application selects the oldest accessible farm as the current workspace.
+Explicit farm switching is deferred until the product supports managing more
+than one farm.
+
 ## Deliberately deferred
 
-- No dashboard is included in Mission 1; the protected area is a simple welcome
-  screen used to prove authentication and route protection.
+- The Mission 2 dashboard is an authenticated placeholder; operational feature
+  pages and farm switching remain deferred.
 - No marketplace, subscription, or AI tables are created.
 - No database changes are applied automatically; the migration must be reviewed
   and applied by the project owner.
