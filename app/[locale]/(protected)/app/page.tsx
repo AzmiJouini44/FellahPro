@@ -4,6 +4,7 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { formatTnd } from "@/lib/format";
 import { getCurrentWorkspace } from "@/lib/workspace";
+import { getMissingWorkspaceRedirect } from "@/lib/workspace-routing";
 
 export const instant = false;
 
@@ -19,7 +20,13 @@ export default async function DashboardPage({
   const workspace = await getCurrentWorkspace(locale);
 
   if (!workspace.profile || !workspace.farm) {
-    redirect(`/${locale}/onboarding`);
+    redirect(
+      getMissingWorkspaceRedirect(
+        locale,
+        workspace.profile !== null,
+        workspace.farm !== null,
+      ) ?? `/${locale}/onboarding`,
+    );
   }
 
   const dictionary = getDictionary(locale);

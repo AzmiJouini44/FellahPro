@@ -125,8 +125,18 @@ trigger creates the owner membership. This keeps authorization and the
 ownership invariant in the database and leaves RLS enabled throughout.
 
 The application selects the oldest accessible farm as the current workspace.
-Explicit farm switching is deferred until the product supports managing more
-than one farm.
+"Accessible" here requires a current `farm_members` row; creator-only SELECT
+visibility on a farm is not sufficient. The role is returned from that same
+membership. Explicit farm switching is deferred until the product supports
+managing more than one farm.
+
+Workspace selection and first-farm creation are exposed as narrow
+`security invoker` database functions. They derive the user from `auth.uid()`
+and continue to run under the authenticated user's grants and RLS policies.
+First-farm creation locks the caller's profile row before checking membership.
+Concurrent onboarding submissions for the same user therefore serialize, and
+later submissions return the membership created by the first transaction
+instead of creating duplicate farms.
 
 ## Deliberately deferred
 

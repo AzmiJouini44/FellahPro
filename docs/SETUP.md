@@ -33,7 +33,12 @@ Signup normally creates a profile through the existing Auth trigger. The
 onboarding fallback handles development or legacy Auth users whose profile is
 missing. Creating a farm is performed with the user's authenticated Supabase
 client, so RLS remains active. The existing database trigger assigns that user
-the `owner` membership.
+the `owner` membership. A database function serializes concurrent first-farm
+requests per profile, preventing duplicate farms without a service-role client.
+
+The current workspace is the oldest farm for which the user still has a
+`farm_members` row. A farm that remains visible only because the user originally
+created it is not treated as an active workspace.
 
 ## Authentication settings
 

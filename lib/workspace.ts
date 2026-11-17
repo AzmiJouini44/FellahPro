@@ -15,51 +15,47 @@ type Farm = {
   is_demo: boolean;
 };
 
+type WorkspaceRow = {
+  farm_id: string;
+  farm_name: string;
+  currency: string;
+  is_demo: boolean;
+  member_role: string;
+};
+
 export async function getCurrentWorkspace(locale: Locale) {
   const { supabase, user } = await requireAuthenticatedContext(locale);
-  const [profileResult, farmResult] = await Promise.all([
+  const [profileResult, workspaceResult] = await Promise.all([
     supabase
       .from("profiles")
       .select("full_name, locale")
       .eq("id", user.id)
       .maybeSingle<Profile>(),
-    supabase
-      .from("farms")
-      .select("id, name, currency, is_demo")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle<Farm>(),
+    supabase.rpc("get_current_workspace").maybeSingle<WorkspaceRow>(),
   ]);
 
   if (profileResult.error) {
     throw new Error("Unable to load the current profile.");
   }
 
-  if (farmResult.error) {
-    throw new Error("Unable to load the current farm.");
+  if (workspaceResult.error) {
+    throw new Error("Unable to load the current workspace.");
   }
 
-  let role: string | null = null;
-
-  if (farmResult.data) {
-    const membershipResult = await supabase
-      .from("farm_members")
-      .select("role")
-      .eq("farm_id", farmResult.data.id)
-      .eq("user_id", user.id)
-      .maybeSingle<{ role: string }>();
-
-    if (membershipResult.error) {
-      throw new Error("Unable to load the current farm membership.");
-    }
-
-    role = membershipResult.data?.role ?? null;
-  }
+  const workspace = workspaceResult.data;
+  const farm: Farm | null = workspace
+    ? {
+        id: workspace.farm_id,
+        name: workspace.farm_name,
+        currency: workspace.currency,
+        is_demo: workspace.is_demo,
+      }
+    : null;
 
   return {
     user,
     profile: profileResult.data,
-    farm: farmResult.data,
-    role,
+    farm,
+    role: workspace?.member_role ?? null,
   };
 }

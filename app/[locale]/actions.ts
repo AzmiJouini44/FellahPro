@@ -104,21 +104,6 @@ export async function createFirstFarm(
   }
 
   const { supabase, user } = await requireAuthenticatedContext(locale);
-  const existingFarm = await supabase
-    .from("farms")
-    .select("id")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle<{ id: string }>();
-
-  if (existingFarm.error) {
-    return { message: dictionary.onboarding.messages.loadFailed };
-  }
-
-  if (existingFarm.data) {
-    redirect(`/${locale}/app`);
-  }
-
   const { error: profileError } = await supabase.from("profiles").upsert(
     {
       id: user.id,
@@ -132,9 +117,8 @@ export async function createFirstFarm(
     return { message: dictionary.onboarding.messages.profileFailed };
   }
 
-  const { error: farmError } = await supabase.from("farms").insert({
-    name: farmName,
-    currency: "TND",
+  const { error: farmError } = await supabase.rpc("create_first_farm", {
+    p_name: farmName,
   });
 
   if (farmError) {
