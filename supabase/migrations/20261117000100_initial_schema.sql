@@ -16,12 +16,13 @@ create table public.farms (
   name text not null check (length(btrim(name)) > 0),
   currency text not null default 'TND' check (currency = 'TND'),
   is_demo boolean not null default false,
-  created_by uuid not null default auth.uid() references public.profiles (id),
+  created_by uuid default auth.uid()
+    references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-comment on table public.farms is 'Farm workspaces; demo workspaces are flagged and excluded from reporting.';
+comment on table public.farms is 'Farm workspaces; demo workspaces are explicitly flagged in reporting.';
 
 create table public.farm_members (
   farm_id uuid not null references public.farms (id) on delete cascade,
@@ -91,7 +92,7 @@ create table public.animal_groups (
   activity_id uuid not null,
   name text not null check (length(btrim(name)) > 0),
   species text not null check (length(btrim(species)) > 0),
-  head_count integer not null default 0 check (head_count >= 0),
+  opening_count integer not null default 0 check (opening_count >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -161,7 +162,8 @@ create table public.transactions (
   transaction_date date not null default current_date,
   reference text,
   notes text,
-  created_by uuid not null default auth.uid() references public.profiles (id),
+  created_by uuid default auth.uid()
+    references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (num_nonnulls(crop_cycle_id, animal_group_id) <= 1),
@@ -202,7 +204,7 @@ create table public.payments (
   id uuid primary key default gen_random_uuid(),
   farm_id uuid not null references public.farms (id) on delete cascade,
   transaction_id uuid not null,
-  amount numeric(12,3) not null check (amount >= 0),
+  amount numeric(12,3) not null check (amount > 0),
   paid_on date not null default current_date,
   method text not null default 'especes'
     check (method in ('especes', 'virement', 'cheque', 'carte', 'autre')),
@@ -273,6 +275,7 @@ create table public.tasks (
     references public.animal_groups (id, farm_id, activity_id),
   foreign key (farm_id, assigned_to)
     references public.farm_members (farm_id, user_id)
+    on delete set null (assigned_to)
 );
 
 comment on table public.tasks is 'Farm work items that may be attached to an activity, crop cycle, or animal group.';
@@ -292,11 +295,24 @@ $$;
 create or replace function public.prevent_created_by_change()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
   if new.created_by is distinct from old.created_by then
-    raise exception 'created_by cannot be changed';
+    -- ON DELETE SET NULL runs after the referenced profile has been deleted.
+    -- No ordinary update may clear or reassign a still-existing creator.
+    if not (
+      new.created_by is null
+      and old.created_by is not null
+      and not exists (
+        select 1
+        from public.profiles
+        where id = old.created_by
+      )
+    ) then
+      raise exception 'created_by cannot be changed';
+    end if;
   end if;
 
   return new;
@@ -329,6 +345,86 @@ create trigger protect_farm_created_by
 create trigger protect_transaction_created_by
   before update on public.transactions
   for each row execute function public.prevent_created_by_change();
+
+-- Keep settlements consistent when payments are added or transaction totals shrink.
+create or replace function public.assert_transaction_not_overpaid(
+  target_farm_id uuid,
+  target_transaction_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  line_total numeric;
+  payment_total numeric;
+begin
+  -- Lock the parent to serialize concurrent payment/line changes. The parent is
+  -- already gone while its cascading child deletes run, which should be allowed.
+  perform 1
+  from public.transactions
+  where id = target_transaction_id
+    and farm_id = target_farm_id
+  for update;
+
+  if not found then
+    return;
+  end if;
+
+  select coalesce(sum(amount), 0::numeric)
+  into line_total
+  from public.transaction_lines
+  where transaction_id = target_transaction_id
+    and farm_id = target_farm_id;
+
+  select coalesce(sum(amount), 0::numeric)
+  into payment_total
+  from public.payments
+  where transaction_id = target_transaction_id
+    and farm_id = target_farm_id;
+
+  if payment_total > line_total then
+    raise exception 'payments (%) exceed transaction total (%)', payment_total, line_total
+      using errcode = '23514';
+  end if;
+end;
+$$;
+
+create or replace function public.enforce_transaction_not_overpaid()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if tg_table_name = 'payments' then
+    perform public.assert_transaction_not_overpaid(new.farm_id, new.transaction_id);
+  elsif tg_op = 'DELETE' then
+    perform public.assert_transaction_not_overpaid(old.farm_id, old.transaction_id);
+  else
+    perform public.assert_transaction_not_overpaid(old.farm_id, old.transaction_id);
+
+    if (new.farm_id, new.transaction_id)
+      is distinct from (old.farm_id, old.transaction_id)
+    then
+      perform public.assert_transaction_not_overpaid(new.farm_id, new.transaction_id);
+    end if;
+  end if;
+
+  return null;
+end;
+$$;
+
+create constraint trigger payments_must_not_overpay
+  after insert or update on public.payments
+  deferrable initially immediate
+  for each row execute function public.enforce_transaction_not_overpaid();
+
+create constraint trigger line_changes_must_not_overpay
+  after update or delete on public.transaction_lines
+  deferrable initially immediate
+  for each row execute function public.enforce_transaction_not_overpaid();
 
 -- Create a profile for every Auth user. Metadata is optional and untrusted.
 create or replace function public.handle_new_user()
@@ -407,6 +503,19 @@ as $$
   );
 $$;
 
+create or replace function public.farm_role(target_farm_id uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select role
+  from public.farm_members
+  where farm_id = target_farm_id
+    and user_id = (select auth.uid());
+$$;
+
 create or replace function public.shares_farm(target_user_id uuid)
 returns boolean
 language sql
@@ -423,12 +532,78 @@ as $$
   );
 $$;
 
+create or replace function public.guard_last_farm_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  removing_owner boolean := false;
+begin
+  if old.role = 'owner' then
+    if tg_op = 'DELETE' then
+      removing_owner := true;
+    elsif new.role <> 'owner' then
+      removing_owner := true;
+    end if;
+  end if;
+
+  if removing_owner then
+    -- Serialize concurrent owner removal/demotion attempts for this farm.
+    perform 1
+    from public.farms
+    where id = old.farm_id
+    for update;
+
+    perform 1
+    from public.farm_members
+    where farm_id = old.farm_id
+      and role = 'owner'
+      and user_id <> old.user_id
+    for update;
+
+    if not found then
+      raise exception 'a farm must retain at least one owner'
+        using errcode = '23514';
+    end if;
+  end if;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger keep_one_farm_owner_on_update
+  before update of role on public.farm_members
+  for each row execute function public.guard_last_farm_owner();
+
+create trigger keep_one_farm_owner_on_delete
+  before delete on public.farm_members
+  for each row execute function public.guard_last_farm_owner();
+
 revoke all on function public.is_farm_member(uuid) from public, anon;
 revoke all on function public.is_farm_owner(uuid) from public, anon;
+revoke all on function public.farm_role(uuid) from public, anon;
 revoke all on function public.shares_farm(uuid) from public, anon;
 grant execute on function public.is_farm_member(uuid) to authenticated;
 grant execute on function public.is_farm_owner(uuid) to authenticated;
+grant execute on function public.farm_role(uuid) to authenticated;
 grant execute on function public.shares_farm(uuid) to authenticated;
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.add_farm_creator_as_owner() from public, anon, authenticated;
+revoke execute on function public.set_updated_at() from public, anon, authenticated;
+revoke execute on function public.prevent_created_by_change() from public, anon, authenticated;
+revoke execute on function public.assert_transaction_not_overpaid(uuid, uuid)
+  from public, anon, authenticated;
+revoke execute on function public.enforce_transaction_not_overpaid()
+  from public, anon, authenticated;
+revoke execute on function public.guard_last_farm_owner()
+  from public, anon, authenticated;
 
 -- Index the membership lookup and every farm_id used by RLS.
 create index farm_members_user_farm_idx on public.farm_members (user_id, farm_id);
@@ -480,7 +655,10 @@ create policy "users can update their profile"
 
 create policy "members can read farms"
   on public.farms for select to authenticated
-  using (public.is_farm_member(id));
+  using (
+    public.is_farm_member(id)
+    or created_by = (select auth.uid())
+  );
 
 create policy "users can create farms"
   on public.farms for insert to authenticated
@@ -508,12 +686,15 @@ create policy "owners can update farm members"
   using (public.is_farm_owner(farm_id))
   with check (public.is_farm_owner(farm_id));
 
-create policy "owners can remove farm members"
+create policy "owners can remove members or members can leave"
   on public.farm_members for delete to authenticated
-  using (public.is_farm_owner(farm_id));
+  using (
+    public.is_farm_owner(farm_id)
+    or user_id = (select auth.uid())
+  );
 
--- Operational tables share the same farm-membership boundary. Roles can be
--- narrowed later without changing the schema.
+-- Every member can read farm data. Mutation policies below implement the role
+-- matrix; permissive policies combine with OR for owners and allowed roles.
 do $$
 declare
   table_name text;
@@ -521,53 +702,162 @@ begin
   foreach table_name in array array[
     'activities', 'plots', 'crop_cycles', 'animal_groups', 'animal_events',
     'parties', 'products', 'inventory_movements',
-    'transaction_lines', 'payments', 'tasks'
+    'transactions', 'transaction_lines', 'payments', 'tasks'
   ]
   loop
     execute format(
       'create policy "members can read %1$s" on public.%1$I '
-      'for select to authenticated using (public.is_farm_member(farm_id))',
-      table_name
-    );
-    execute format(
-      'create policy "members can create %1$s" on public.%1$I '
-      'for insert to authenticated with check (public.is_farm_member(farm_id))',
-      table_name
-    );
-    execute format(
-      'create policy "members can update %1$s" on public.%1$I '
-      'for update to authenticated using (public.is_farm_member(farm_id)) '
-      'with check (public.is_farm_member(farm_id))',
-      table_name
-    );
-    execute format(
-      'create policy "members can delete %1$s" on public.%1$I '
-      'for delete to authenticated using (public.is_farm_member(farm_id))',
+      'for select to authenticated using (public.farm_role(farm_id) is not null)',
       table_name
     );
   end loop;
 end;
 $$;
 
-create policy "members can read transactions"
-  on public.transactions for select to authenticated
-  using (public.is_farm_member(farm_id));
+-- Only owners mutate structural farm data.
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['activities', 'animal_groups']
+  loop
+    execute format(
+      'create policy "owners can create %1$s" on public.%1$I '
+      'for insert to authenticated with check (public.farm_role(farm_id) = ''owner'')',
+      table_name
+    );
+    execute format(
+      'create policy "owners can update %1$s" on public.%1$I '
+      'for update to authenticated using (public.farm_role(farm_id) = ''owner'') '
+      'with check (public.farm_role(farm_id) = ''owner'')',
+      table_name
+    );
+    execute format(
+      'create policy "owners can delete %1$s" on public.%1$I '
+      'for delete to authenticated using (public.farm_role(farm_id) = ''owner'')',
+      table_name
+    );
+  end loop;
+end;
+$$;
+
+-- Workers operate production records; accountants can only read them.
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['animal_events', 'tasks', 'plots', 'crop_cycles']
+  loop
+    execute format(
+      'create policy "owners and workers can create %1$s" on public.%1$I '
+      'for insert to authenticated '
+      'with check (public.farm_role(farm_id) in (''owner'', ''worker''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners and workers can update %1$s" on public.%1$I '
+      'for update to authenticated '
+      'using (public.farm_role(farm_id) in (''owner'', ''worker'')) '
+      'with check (public.farm_role(farm_id) in (''owner'', ''worker''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners can delete %1$s" on public.%1$I '
+      'for delete to authenticated using (public.farm_role(farm_id) = ''owner'')',
+      table_name
+    );
+  end loop;
+end;
+$$;
+
+-- Accountants fully manage parties and products; workers have read-only access.
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['parties', 'products']
+  loop
+    execute format(
+      'create policy "owners and accountants can create %1$s" on public.%1$I '
+      'for insert to authenticated '
+      'with check (public.farm_role(farm_id) in (''owner'', ''accountant''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners and accountants can update %1$s" on public.%1$I '
+      'for update to authenticated '
+      'using (public.farm_role(farm_id) in (''owner'', ''accountant'')) '
+      'with check (public.farm_role(farm_id) in (''owner'', ''accountant''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners and accountants can delete %1$s" on public.%1$I '
+      'for delete to authenticated '
+      'using (public.farm_role(farm_id) in (''owner'', ''accountant''))',
+      table_name
+    );
+  end loop;
+end;
+$$;
+
+-- Inventory is operational for workers and financial for accountants. Deletion
+-- remains owner-only so stock history cannot be erased by either role.
+create policy "members can create inventory movements"
+  on public.inventory_movements for insert to authenticated
+  with check (public.farm_role(farm_id) in ('owner', 'accountant', 'worker'));
+
+create policy "members can update inventory movements"
+  on public.inventory_movements for update to authenticated
+  using (public.farm_role(farm_id) in ('owner', 'accountant', 'worker'))
+  with check (public.farm_role(farm_id) in ('owner', 'accountant', 'worker'));
+
+create policy "owners can delete inventory movements"
+  on public.inventory_movements for delete to authenticated
+  using (public.farm_role(farm_id) = 'owner');
 
 create policy "members can create their transactions"
   on public.transactions for insert to authenticated
   with check (
-    public.is_farm_member(farm_id)
+    public.farm_role(farm_id) in ('owner', 'accountant', 'worker')
     and created_by = (select auth.uid())
   );
 
-create policy "members can update transactions"
+create policy "owners and accountants can update transactions"
   on public.transactions for update to authenticated
-  using (public.is_farm_member(farm_id))
-  with check (public.is_farm_member(farm_id));
+  using (public.farm_role(farm_id) in ('owner', 'accountant'))
+  with check (public.farm_role(farm_id) in ('owner', 'accountant'));
 
-create policy "members can delete transactions"
+create policy "owners can delete transactions"
   on public.transactions for delete to authenticated
-  using (public.is_farm_member(farm_id));
+  using (public.farm_role(farm_id) = 'owner');
+
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['transaction_lines', 'payments']
+  loop
+    execute format(
+      'create policy "members can create %1$s" on public.%1$I '
+      'for insert to authenticated '
+      'with check (public.farm_role(farm_id) in (''owner'', ''accountant'', ''worker''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners and accountants can update %1$s" on public.%1$I '
+      'for update to authenticated '
+      'using (public.farm_role(farm_id) in (''owner'', ''accountant'')) '
+      'with check (public.farm_role(farm_id) in (''owner'', ''accountant''))',
+      table_name
+    );
+    execute format(
+      'create policy "owners can delete %1$s" on public.%1$I '
+      'for delete to authenticated using (public.farm_role(farm_id) = ''owner'')',
+      table_name
+    );
+  end loop;
+end;
+$$;
 
 -- Financial views are authoritative for application and future AI consumers.
 create view public.v_activity_pnl
@@ -596,6 +886,7 @@ with transaction_totals as (
 )
 select
   activities.farm_id,
+  farms.is_demo,
   activities.id as activity_id,
   activities.name as activity_name,
   activities.kind as activity_kind,
@@ -607,42 +898,54 @@ from public.activities
 join public.farms on farms.id = activities.farm_id
 left join activity_totals
   on activity_totals.farm_id = activities.farm_id
- and activity_totals.activity_id = activities.id
-where not farms.is_demo;
+ and activity_totals.activity_id = activities.id;
 
-comment on view public.v_activity_pnl is 'Non-demo revenue, expense, and profit totals calculated per activity.';
+comment on view public.v_activity_pnl is 'Revenue, expense, and profit totals calculated per activity, with demo status exposed.';
 
 create view public.v_stock_levels
 with (security_invoker = true)
 as
+with stock_levels as (
+  select
+    products.farm_id,
+    farms.is_demo,
+    products.id as product_id,
+    products.name as product_name,
+    products.unit,
+    products.minimum_stock,
+    coalesce(sum(
+      case inventory_movements.kind
+        when 'entree' then inventory_movements.quantity
+        when 'ajustement_positif' then inventory_movements.quantity
+        when 'sortie' then -inventory_movements.quantity
+        when 'ajustement_negatif' then -inventory_movements.quantity
+      end
+    ), 0::numeric)::numeric(14,3) as quantity_on_hand
+  from public.products
+  join public.farms on farms.id = products.farm_id
+  left join public.inventory_movements
+    on inventory_movements.farm_id = products.farm_id
+   and inventory_movements.product_id = products.id
+  group by
+    products.farm_id,
+    farms.is_demo,
+    products.id,
+    products.name,
+    products.unit,
+    products.minimum_stock
+)
 select
-  products.farm_id,
-  products.id as product_id,
-  products.name as product_name,
-  products.unit,
-  products.minimum_stock,
-  coalesce(sum(
-    case inventory_movements.kind
-      when 'entree' then inventory_movements.quantity
-      when 'ajustement_positif' then inventory_movements.quantity
-      when 'sortie' then -inventory_movements.quantity
-      when 'ajustement_negatif' then -inventory_movements.quantity
-    end
-  ), 0::numeric)::numeric(14,3) as quantity_on_hand
-from public.products
-join public.farms on farms.id = products.farm_id
-left join public.inventory_movements
-  on inventory_movements.farm_id = products.farm_id
- and inventory_movements.product_id = products.id
-where not farms.is_demo
-group by
-  products.farm_id,
-  products.id,
-  products.name,
-  products.unit,
-  products.minimum_stock;
+  farm_id,
+  is_demo,
+  product_id,
+  product_name,
+  unit,
+  minimum_stock,
+  quantity_on_hand,
+  quantity_on_hand < minimum_stock as is_low
+from stock_levels;
 
-comment on view public.v_stock_levels is 'Non-demo product stock derived exclusively from inventory movements.';
+comment on view public.v_stock_levels is 'Product stock derived from all inventory movements; negative and demo stock remain visible.';
 
 create view public.v_debts
 with (security_invoker = true)
@@ -664,6 +967,7 @@ with transaction_totals as (
 )
 select
   transactions.farm_id,
+  farms.is_demo,
   transactions.id as transaction_id,
   transactions.transaction_date,
   transactions.kind as transaction_kind,
@@ -675,11 +979,10 @@ select
   parties.name as party_name,
   coalesce(transaction_totals.total, 0::numeric)::numeric(12,3) as total_amount,
   coalesce(payment_totals.paid, 0::numeric)::numeric(12,3) as paid_amount,
-  greatest(
-    coalesce(transaction_totals.total, 0::numeric)
-      - coalesce(payment_totals.paid, 0::numeric),
-    0::numeric
-  )::numeric(12,3) as outstanding_amount
+  (coalesce(transaction_totals.total, 0::numeric)
+    - coalesce(payment_totals.paid, 0::numeric))::numeric(12,3) as outstanding_amount,
+  coalesce(payment_totals.paid, 0::numeric)
+    > coalesce(transaction_totals.total, 0::numeric) as overpaid
 from public.transactions
 join public.farms on farms.id = transactions.farm_id
 left join public.parties
@@ -691,11 +994,41 @@ left join transaction_totals
 left join payment_totals
   on payment_totals.transaction_id = transactions.id
  and payment_totals.farm_id = transactions.farm_id
-where not farms.is_demo
-  and coalesce(transaction_totals.total, 0::numeric)
-    > coalesce(payment_totals.paid, 0::numeric);
+where coalesce(transaction_totals.total, 0::numeric)
+  <> coalesce(payment_totals.paid, 0::numeric);
 
-comment on view public.v_debts is 'Non-demo outstanding customer receivables and supplier payables.';
+comment on view public.v_debts is 'Outstanding or overpaid receivables and payables, with demo status exposed.';
+
+create view public.v_animal_group_counts
+with (security_invoker = true)
+as
+select
+  animal_groups.farm_id,
+  animal_groups.id as animal_group_id,
+  animal_groups.activity_id,
+  animal_groups.name as animal_group_name,
+  animal_groups.species,
+  animal_groups.opening_count,
+  (
+    animal_groups.opening_count
+    + coalesce(sum(animal_events.quantity)
+        filter (where animal_events.kind in ('naissance', 'achat')), 0)
+    - coalesce(sum(animal_events.quantity)
+        filter (where animal_events.kind in ('vente', 'deces')), 0)
+  )::bigint as current_count
+from public.animal_groups
+left join public.animal_events
+  on animal_events.farm_id = animal_groups.farm_id
+ and animal_events.animal_group_id = animal_groups.id
+group by
+  animal_groups.farm_id,
+  animal_groups.id,
+  animal_groups.activity_id,
+  animal_groups.name,
+  animal_groups.species,
+  animal_groups.opening_count;
+
+comment on view public.v_animal_group_counts is 'Current animal counts from opening count plus births/purchases minus sales/deaths.';
 
 revoke all on all tables in schema public from anon;
 grant select, insert, update, delete on table
@@ -719,5 +1052,6 @@ to authenticated;
 grant select on table
   public.v_activity_pnl,
   public.v_stock_levels,
-  public.v_debts
+  public.v_debts,
+  public.v_animal_group_counts
 to authenticated;

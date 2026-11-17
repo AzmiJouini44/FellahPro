@@ -45,20 +45,32 @@ management is owner-only. RLS helper functions are `security definer` functions
 with a fixed `search_path` so policies can check membership without recursively
 querying `farm_members` under its own policy.
 
-For Mission 1, all three member roles can create, update, and delete operational
-farm data; only owners can edit the farm or its membership. Finer worker and
-accountant permissions are deferred until those workflows exist. Audit
-`created_by` fields cannot be reassigned after insertion, and a transaction can
-only be inserted with the current user as its creator.
+Owners have full access. Accountants can manage financial records while other
+farm data is read-only. Workers can insert and update operational records and
+can insert, but not update or delete, transactions, lines, and payments.
+Transactions, transaction lines, payments, and inventory movements are
+owner-delete-only. Members can leave a farm unless they are its last owner, and
+a farm can never be left without an owner through membership changes. Audit
+`created_by` fields cannot be reassigned after insertion, except that account
+deletion clears them; a transaction can only be inserted with the current user
+as its creator.
 
 Profiles are readable by the profile owner and by people who share a farm with
 that profile. A signup trigger creates the matching profile automatically.
 
 ## Demo data
 
-Demo farms are marked with `farms.is_demo`. The reporting views exclude demo
-farms so demo activity does not enter product statistics. Operational tables
-remain visible to members of a demo farm so the demo remains usable.
+Demo farms are marked with `farms.is_demo`. Reporting views include them and
+expose `is_demo`, so every consumer can explicitly include or exclude demo data.
+Operational tables remain visible to members of a demo farm.
+
+## Animal counts
+
+`animal_groups.opening_count` is the starting number of animals in a group.
+`v_animal_group_counts.current_count` adds `naissance` and `achat` events and
+subtracts `vente` and `deces` events. `transfert`, `soin`, and `autre` events do
+not change the count: transfers do not identify a destination group in this
+schema, while care and miscellaneous events are non-population events.
 
 ## Authentication and localization
 
