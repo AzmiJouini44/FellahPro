@@ -45,15 +45,30 @@ management is owner-only. RLS helper functions are `security definer` functions
 with a fixed `search_path` so policies can check membership without recursively
 querying `farm_members` under its own policy.
 
+Membership identity is immutable: `farm_members.farm_id` and `user_id` cannot be
+updated. Authenticated clients receive column-level update permission only for
+`role`, and the owner-only UPDATE policy checks the existing row and resulting
+row. A database trigger also rejects identity changes made through privileged
+or direct SQL, so moving a membership cannot bypass authorization or owner
+protection.
+
 Owners have full access. Accountants can manage financial records while other
 farm data is read-only. Workers can insert and update operational records and
 can insert, but not update or delete, transactions, lines, and payments.
 Transactions, transaction lines, payments, and inventory movements are
 owner-delete-only. Members can leave a farm unless they are its last owner, and
-a farm can never be left without an owner through membership changes. Audit
-`created_by` fields cannot be reassigned after insertion, except that account
-deletion clears them; a transaction can only be inserted with the current user
-as its creator.
+a farm can never be left without an owner through membership changes. Owner
+removals and demotions lock the parent farm row before checking for another
+owner, serializing concurrent attempts. Deleting a farm is explicitly allowed:
+once the parent farm row has been deleted, its membership cascade no longer
+needs to preserve an owner.
+
+Deleting an Auth account cascades through its profile and memberships, but an
+account deletion is rejected if that profile is the sole owner of any existing
+farm. The owner must first add or promote another owner, or delete the farm.
+When another owner remains, account deletion succeeds and audit `created_by`
+fields and task assignments are cleared rather than reassigned. A transaction
+can only be inserted with the current user as its creator.
 
 Profiles are readable by the profile owner and by people who share a farm with
 that profile. A signup trigger creates the matching profile automatically.

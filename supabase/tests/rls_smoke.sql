@@ -119,6 +119,19 @@ values (
   100
 );
 
+insert into public.payments (
+  id,
+  farm_id,
+  transaction_id,
+  amount
+)
+values (
+  '65000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  '50000000-0000-0000-0000-000000000001',
+  25
+);
+
 insert into public.inventory_movements (
   id,
   farm_id,
@@ -163,6 +176,51 @@ $$;
 insert into public.farms (id, name)
 values ('20000000-0000-0000-0000-000000000002', 'Farm B');
 
+-- Membership in farm B must not expose important records from farm A.
+do $$
+declare
+  changed_rows integer;
+begin
+  if exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.activities
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.products
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.transactions
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.transaction_lines
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.payments
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.inventory_movements
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) or exists (
+    select 1 from public.tasks
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+  ) then
+    raise exception 'farm B owner can read farm A data';
+  end if;
+
+  update public.farm_members
+  set role = 'accountant'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000003';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 0 then
+    raise exception 'farm B owner changed a farm A membership role';
+  end if;
+end;
+$$;
+
 do $$
 begin
   begin
@@ -176,19 +234,284 @@ begin
 end;
 $$;
 
--- A worker can see the transaction but cannot delete it.
+-- A sole owner also cannot demote their own membership through UPDATE.
+do $$
+begin
+  begin
+    update public.farm_members
+    set role = 'worker'
+    where farm_id = '20000000-0000-0000-0000-000000000002'
+      and user_id = '10000000-0000-0000-0000-000000000002';
+    raise exception 'last owner was allowed to demote themselves';
+  exception
+    when check_violation then null;
+  end;
+
+  if not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000002'
+      and user_id = '10000000-0000-0000-0000-000000000002'
+      and role = 'owner'
+  ) then
+    raise exception 'failed last-owner demotion changed the membership';
+  end if;
+end;
+$$;
+
+-- Deleting an Auth account that is the sole owner of an existing farm is
+-- rejected. The account, profile, farm, and membership must all remain.
+reset role;
+
+do $$
+begin
+  begin
+    delete from auth.users
+    where id = '10000000-0000-0000-0000-000000000002';
+    raise exception 'sole-owner Auth account deletion was allowed';
+  exception
+    when check_violation then null;
+  end;
+
+  if not exists (
+    select 1 from auth.users
+    where id = '10000000-0000-0000-0000-000000000002'
+  ) or not exists (
+    select 1 from public.profiles
+    where id = '10000000-0000-0000-0000-000000000002'
+  ) or not exists (
+    select 1 from public.farms
+    where id = '20000000-0000-0000-0000-000000000002'
+  ) or not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000002'
+      and user_id = '10000000-0000-0000-0000-000000000002'
+      and role = 'owner'
+  ) then
+    raise exception 'rejected sole-owner account deletion changed persisted data';
+  end if;
+end;
+$$;
+
+-- Membership identities are immutable even to a privileged database caller,
+-- so moving an owner row cannot bypass the last-owner invariant.
+do $$
+begin
+  begin
+    update public.farm_members
+    set farm_id = '20000000-0000-0000-0000-000000000002'
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000001';
+    raise exception 'owner membership was moved to another farm';
+  exception
+    when check_violation then null;
+  end;
+
+  if not exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000001'
+      and role = 'owner'
+  ) then
+    raise exception 'failed owner move did not preserve the original membership';
+  end if;
+end;
+$$;
+
+-- Authenticated owners may update roles in their own farm, but identity
+-- columns are not granted for update.
+set local role authenticated;
+set local request.jwt.claims =
+  '{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated"}';
+
+do $$
+declare
+  changed_rows integer;
+begin
+  begin
+    update public.farm_members
+    set user_id = '10000000-0000-0000-0000-000000000002'
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000003';
+    raise exception 'authenticated owner changed a membership user_id';
+  exception
+    when insufficient_privilege then null;
+  end;
+
+  update public.farm_members
+  set role = 'accountant'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000003';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 1 then
+    raise exception 'owner could not update a member role in their farm';
+  end if;
+
+  update public.farm_members
+  set role = 'worker'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000003';
+end;
+$$;
+
+-- A non-owner cannot promote themselves or update membership identities.
 set local request.jwt.claims =
   '{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated"}';
 
 do $$
 declare
+  changed_rows integer;
+begin
+  update public.farm_members
+  set role = 'owner'
+  where farm_id = '20000000-0000-0000-0000-000000000001'
+    and user_id = '10000000-0000-0000-0000-000000000003';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 0 then
+    raise exception 'worker changed their own membership role';
+  end if;
+
+  begin
+    update public.farm_members
+    set user_id = '10000000-0000-0000-0000-000000000002'
+    where farm_id = '20000000-0000-0000-0000-000000000001'
+      and user_id = '10000000-0000-0000-0000-000000000003';
+    raise exception 'worker changed a membership user_id';
+  exception
+    when insufficient_privilege then null;
+  end;
+end;
+$$;
+
+-- Deleting a farm with exactly one owner must cascade through its membership.
+set local request.jwt.claims =
+  '{"sub":"10000000-0000-0000-0000-000000000002","role":"authenticated"}';
+
+do $$
+declare
   deleted_rows integer;
 begin
-  delete from public.transactions
-  where id = '50000000-0000-0000-0000-000000000001';
+  delete from public.farms
+  where id = '20000000-0000-0000-0000-000000000002';
   get diagnostics deleted_rows = row_count;
 
-  if deleted_rows <> 0 then
+  if deleted_rows <> 1 then
+    raise exception 'sole-owner farm was not deleted';
+  end if;
+end;
+$$;
+
+reset role;
+
+do $$
+begin
+  if exists (
+    select 1 from public.farms
+    where id = '20000000-0000-0000-0000-000000000002'
+  ) or exists (
+    select 1 from public.farm_members
+    where farm_id = '20000000-0000-0000-0000-000000000002'
+  ) then
+    raise exception 'farm deletion did not cascade through memberships';
+  end if;
+end;
+$$;
+
+-- Workers may create financial records, but cannot update or delete them.
+set local role authenticated;
+set local request.jwt.claims =
+  '{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated"}';
+
+do $$
+declare
+  changed_rows integer;
+begin
+  insert into public.transactions (
+    id,
+    farm_id,
+    activity_id,
+    kind,
+    created_by
+  ) values (
+    '50000000-0000-0000-0000-000000000002',
+    '20000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000001',
+    'depense',
+    '10000000-0000-0000-0000-000000000003'
+  );
+
+  insert into public.transaction_lines (
+    id,
+    farm_id,
+    transaction_id,
+    description,
+    quantity,
+    unit_price
+  ) values (
+    '60000000-0000-0000-0000-000000000002',
+    '20000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000002',
+    'Worker-created expense',
+    1,
+    10
+  );
+
+  insert into public.payments (
+    id,
+    farm_id,
+    transaction_id,
+    amount
+  ) values (
+    '65000000-0000-0000-0000-000000000002',
+    '20000000-0000-0000-0000-000000000001',
+    '50000000-0000-0000-0000-000000000002',
+    5
+  );
+
+  update public.transactions
+  set notes = 'worker update'
+  where id = '50000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'worker updated a transaction';
+  end if;
+
+  update public.transaction_lines
+  set description = 'worker update'
+  where id = '60000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'worker updated a transaction line';
+  end if;
+
+  update public.payments
+  set amount = 4
+  where id = '65000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'worker updated a payment';
+  end if;
+
+  delete from public.payments
+  where id = '65000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'worker deleted a payment';
+  end if;
+
+  delete from public.transaction_lines
+  where id = '60000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 0 then
+    raise exception 'worker deleted a transaction line';
+  end if;
+
+  delete from public.transactions
+  where id = '50000000-0000-0000-0000-000000000002';
+  get diagnostics changed_rows = row_count;
+
+  if changed_rows <> 0 then
     raise exception 'worker deleted a transaction';
   end if;
 end;

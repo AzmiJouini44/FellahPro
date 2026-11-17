@@ -541,6 +541,14 @@ as $$
 declare
   removing_owner boolean := false;
 begin
+  if tg_op = 'UPDATE' and (
+    new.farm_id is distinct from old.farm_id
+    or new.user_id is distinct from old.user_id
+  ) then
+    raise exception 'farm membership identity cannot be changed'
+      using errcode = '23514';
+  end if;
+
   if old.role = 'owner' then
     if tg_op = 'DELETE' then
       removing_owner := true;
@@ -550,20 +558,30 @@ begin
   end if;
 
   if removing_owner then
-    -- Serialize concurrent owner removal/demotion attempts for this farm.
+    -- The parent row is the serialization point for all owner removals and
+    -- demotions. If it is already gone, this delete is part of a farm cascade
+    -- and the membership no longer needs an owner invariant.
     perform 1
     from public.farms
     where id = old.farm_id
     for update;
 
-    perform 1
-    from public.farm_members
-    where farm_id = old.farm_id
-      and role = 'owner'
-      and user_id <> old.user_id
-    for update;
-
     if not found then
+      if tg_op = 'DELETE' then
+        return old;
+      end if;
+
+      raise exception 'owner membership has no parent farm'
+        using errcode = '23514';
+    end if;
+
+    if not exists (
+      select 1
+      from public.farm_members
+      where farm_id = old.farm_id
+        and role = 'owner'
+        and user_id <> old.user_id
+    ) then
       raise exception 'a farm must retain at least one owner'
         using errcode = '23514';
     end if;
@@ -578,7 +596,7 @@ end;
 $$;
 
 create trigger keep_one_farm_owner_on_update
-  before update of role on public.farm_members
+  before update on public.farm_members
   for each row execute function public.guard_last_farm_owner();
 
 create trigger keep_one_farm_owner_on_delete
@@ -681,7 +699,7 @@ create policy "owners can add farm members"
   on public.farm_members for insert to authenticated
   with check (public.is_farm_owner(farm_id));
 
-create policy "owners can update farm members"
+create policy "owners can update farm member roles"
   on public.farm_members for update to authenticated
   using (public.is_farm_owner(farm_id))
   with check (public.is_farm_owner(farm_id));
@@ -1034,7 +1052,6 @@ revoke all on all tables in schema public from anon;
 grant select, insert, update, delete on table
   public.profiles,
   public.farms,
-  public.farm_members,
   public.activities,
   public.plots,
   public.crop_cycles,
@@ -1048,6 +1065,9 @@ grant select, insert, update, delete on table
   public.payments,
   public.tasks
 to authenticated;
+
+grant select, insert, delete on table public.farm_members to authenticated;
+grant update (role) on table public.farm_members to authenticated;
 
 grant select on table
   public.v_activity_pnl,
