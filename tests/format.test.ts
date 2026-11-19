@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatTnd, getNumberLocale } from "../lib/format";
+import {
+  formatAreaHectares,
+  formatDate,
+  formatTnd,
+  getNumberLocale,
+} from "../lib/format";
 
 test("number formatting follows the selected application locale", () => {
   assert.equal(getNumberLocale("fr"), "fr-TN");
@@ -16,4 +21,10 @@ test("TND formatting uses three fractional digits", () => {
   assert.match(french, /(DT|TND)/);
   assert.ok(arabic.length > 0);
   assert.notEqual(arabic, french);
+});
+
+test("plot areas and dates follow the selected Tunisian locale", () => {
+  assert.equal(formatAreaHectares(12.375, "fr"), "12,375");
+  assert.match(formatAreaHectares(12.375, "ar"), /12[,.]375|١٢[٫,]٣٧٥/);
+  assert.ok(formatDate("2026-11-19T00:00:00.000Z", "fr").length > 0);
 });
