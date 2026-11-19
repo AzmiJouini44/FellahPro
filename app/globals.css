@@ -615,7 +615,7 @@ h1 {
   bottom: 12px;
   left: 12px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   border-radius: 18px;
@@ -830,9 +830,28 @@ h1 {
 
 .plots-page,
 .plot-editor-page,
-.plot-details-page {
+.plot-details-page,
+.cycles-page,
+.cycle-editor-page,
+.cycle-details-page {
   display: grid;
   gap: 24px;
+}
+
+.form-field select {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding-inline: 14px;
+  background: #fcfdfb;
+  color: var(--text);
+}
+
+.form-field select:focus {
+  border-color: var(--primary);
+  outline: 3px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  outline-offset: 1px;
 }
 
 .module-heading {
@@ -982,7 +1001,8 @@ h1 {
   gap: 22px;
 }
 
-.plot-form textarea {
+.plot-form textarea,
+.cycle-form textarea {
   width: 100%;
   resize: vertical;
   border: 1px solid var(--border);
@@ -993,7 +1013,8 @@ h1 {
   line-height: 1.55;
 }
 
-.plot-form textarea:focus {
+.plot-form textarea:focus,
+.cycle-form textarea:focus {
   border-color: var(--primary);
   outline: 3px solid color-mix(in srgb, var(--primary) 20%, transparent);
   outline-offset: 1px;
@@ -1177,6 +1198,243 @@ h1 {
   height: 96px;
 }
 
+.cycle-filters {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px;
+  background: var(--surface);
+}
+
+.cycle-filter-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cycle-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.cycle-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(37, 70, 47, 0.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.cycle-card:hover {
+  border-color: #afc5b3;
+  box-shadow: 0 14px 32px rgba(37, 70, 47, 0.09);
+  transform: translateY(-2px);
+}
+
+.cycle-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.cycle-card h2 {
+  margin: 5px 0 0;
+  font-size: 1.18rem;
+}
+
+.cycle-plot-name,
+.cycle-detail-plot {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.cycle-status {
+  display: inline-flex;
+  min-height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 999px;
+  padding-inline: 10px;
+  background: #eef1ec;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.cycle-status-planned {
+  background: #eef2fb;
+  color: #365a93;
+}
+
+.cycle-status-active {
+  background: #e5f4e9;
+  color: #17633a;
+}
+
+.cycle-status-completed {
+  background: #f5edda;
+  color: #77561d;
+}
+
+.cycle-status-cancelled {
+  background: #f5e8e6;
+  color: #8e3a31;
+}
+
+.cycle-card-facts {
+  display: grid;
+  margin: 0;
+  gap: 10px;
+}
+
+.cycle-card-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.cycle-card-facts dt,
+.cycle-card-facts dd {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.cycle-card-facts dt {
+  color: var(--muted);
+}
+
+.cycle-card-facts dd {
+  text-align: end;
+  font-weight: 750;
+}
+
+.cycle-form-card {
+  width: min(100%, 820px);
+}
+
+.cycle-form {
+  display: grid;
+  gap: 22px;
+}
+
+.cycle-form-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.cycle-details-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+
+.cycle-details-header h1 {
+  margin-block: 6px;
+  font-size: clamp(2rem, 9vw, 3.5rem);
+}
+
+.cycle-details-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cycle-detail-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.cycle-detail-grid article {
+  display: grid;
+  min-height: 120px;
+  align-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  background: var(--surface);
+}
+
+.cycle-detail-grid span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.cycle-detail-grid strong {
+  font-size: 1.12rem;
+}
+
+.cycle-loading-card {
+  height: 260px;
+}
+
+.dashboard-cycle-summary {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  background: var(--surface);
+}
+
+.dashboard-section-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.dashboard-section-heading h2,
+.dashboard-section-heading p {
+  margin: 0;
+}
+
+.dashboard-section-heading h2 {
+  font-size: 1.15rem;
+}
+
+.dashboard-section-heading p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.cycle-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cycle-summary-grid article {
+  display: grid;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--surface-soft);
+}
+
+.cycle-summary-grid span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.cycle-summary-grid strong {
+  font-size: 1.45rem;
+}
+
 @keyframes loading-shimmer {
   to {
     background-position: -200% 0;
@@ -1225,14 +1483,17 @@ h1 {
   }
 
   .module-heading,
-  .plot-details-header {
+  .plot-details-header,
+  .cycle-details-header,
+  .dashboard-section-heading {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
   }
 
   .plot-grid,
-  .loading-card-grid {
+  .loading-card-grid,
+  .cycle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1242,7 +1503,9 @@ h1 {
 
   .form-actions,
   .plot-details-actions,
-  .delete-confirmation-actions {
+  .delete-confirmation-actions,
+  .cycle-details-actions,
+  .cycle-filter-actions {
     flex-direction: row;
     align-items: center;
   }
@@ -1254,6 +1517,27 @@ h1 {
   .record-meta {
     flex-direction: row;
     justify-content: space-between;
+  }
+
+  .cycle-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cycle-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .cycle-filter-crop {
+    grid-column: span 2;
+  }
+
+  .cycle-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cycle-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1328,8 +1612,17 @@ h1 {
   }
 
   .plot-grid,
-  .loading-card-grid {
+  .loading-card-grid,
+  .cycle-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cycle-filters {
+    grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) minmax(220px, 1.4fr) auto;
+  }
+
+  .cycle-filter-crop {
+    grid-column: auto;
   }
 }
 
