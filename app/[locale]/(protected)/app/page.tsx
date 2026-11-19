@@ -1,14 +1,14 @@
 import { notFound, redirect } from "next/navigation";
 
-import { logout } from "@/app/[locale]/actions";
-import { SiteHeader } from "@/components/site-header";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { createClient } from "@/utils/supabase/server";
+import { formatTnd } from "@/lib/format";
+import { getCurrentWorkspace } from "@/lib/workspace";
+import { getMissingWorkspaceRedirect } from "@/lib/workspace-routing";
 
 export const instant = false;
 
-export default async function ProtectedAppPage({
+export default async function DashboardPage({
   params,
 }: PageProps<"/[locale]/app">) {
   const { locale } = await params;
@@ -17,43 +17,74 @@ export default async function ProtectedAppPage({
     notFound();
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+  const workspace = await getCurrentWorkspace(locale);
 
-  if (error || !data?.claims) {
-    redirect(`/${locale}/login`);
+  if (!workspace.profile || !workspace.farm) {
+    redirect(
+      getMissingWorkspaceRedirect(
+        locale,
+        workspace.profile !== null,
+        workspace.farm !== null,
+      ) ?? `/${locale}/onboarding`,
+    );
   }
 
   const dictionary = getDictionary(locale);
-  const email = typeof data.claims.email === "string" ? data.claims.email : null;
+  const role =
+    workspace.role && workspace.role in dictionary.roles
+      ? dictionary.roles[workspace.role as keyof typeof dictionary.roles]
+      : dictionary.roles.unknown;
+  const displayName = workspace.profile.full_name ?? dictionary.dashboard.fallbackName;
 
   return (
-    <div className="page-shell">
-      <SiteHeader locale={locale} isAuthenticated />
-      <main className="protected-main shell">
-        <section className="protected-card">
+    <div className="dashboard-page">
+      <section className="dashboard-heading" id="overview">
+        <div>
+          <p className="eyebrow">{dictionary.dashboard.eyebrow}</p>
+          <h1>
+            {dictionary.dashboard.greeting}, {displayName}
+          </h1>
+          <p>{dictionary.dashboard.description}</p>
+        </div>
+        <span className={`farm-mode ${workspace.farm.is_demo ? "is-demo" : ""}`}>
+          {workspace.farm.is_demo ? dictionary.dashboard.demo : dictionary.dashboard.live}
+        </span>
+      </section>
+
+      <section className="metric-grid" aria-label={dictionary.dashboard.eyebrow}>
+        <article className="metric-card metric-card-primary" id="farm">
+          <span>{dictionary.dashboard.currentFarm}</span>
+          <strong>{workspace.farm.name}</strong>
+          <small>{dictionary.dashboard.currency}: {workspace.farm.currency}</small>
+        </article>
+        <article className="metric-card">
+          <span>{dictionary.dashboard.role}</span>
+          <strong>{role}</strong>
+          <small>{dictionary.onboarding.securityNote}</small>
+        </article>
+        <article className="metric-card">
+          <span>{dictionary.dashboard.trackedBalance}</span>
+          <strong dir="ltr">{formatTnd(0, locale)}</strong>
+          <small>{dictionary.dashboard.trackedBalanceHint}</small>
+        </article>
+      </section>
+
+      <section className="readiness-grid">
+        <article className="readiness-card is-ready">
+          <span className="readiness-icon" aria-hidden="true">✓</span>
           <div>
-            <p className="eyebrow">{dictionary.protected.eyebrow}</p>
-            <h1>{dictionary.protected.title}</h1>
-            <p className="protected-description">{dictionary.protected.description}</p>
+            <h2>{dictionary.dashboard.setupTitle}</h2>
+            <p>{dictionary.dashboard.setupDescription}</p>
           </div>
-          {email ? (
-            <p className="identity">
-              <span>{dictionary.protected.signedInAs}</span>
-              <strong dir="ltr">{email}</strong>
-            </p>
-          ) : null}
-          <div className="protected-footer">
-            <p>{dictionary.protected.noDashboard}</p>
-            <form action={logout}>
-              <input name="locale" type="hidden" value={locale} />
-              <button className="button button-secondary" type="submit">
-                {dictionary.auth.logout}
-              </button>
-            </form>
+        </article>
+        <article className="readiness-card">
+          <span className="readiness-icon" aria-hidden="true">→</span>
+          <div>
+            <h2>{dictionary.dashboard.nextTitle}</h2>
+            <p>{dictionary.dashboard.nextDescription}</p>
           </div>
-        </section>
-      </main>
+        </article>
+      </section>
     </div>
   );
 }

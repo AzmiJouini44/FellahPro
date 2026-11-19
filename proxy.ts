@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
   const localeRoot = `/${requestedLocale}`;
   const isProtectedRoute =
     request.nextUrl.pathname === `${localeRoot}/app` ||
-    request.nextUrl.pathname.startsWith(`${localeRoot}/app/`);
+    request.nextUrl.pathname.startsWith(`${localeRoot}/app/`) ||
+    request.nextUrl.pathname === `${localeRoot}/onboarding` ||
+    request.nextUrl.pathname.startsWith(`${localeRoot}/onboarding/`);
   const isAuthRoute =
     request.nextUrl.pathname === `${localeRoot}/login` ||
     request.nextUrl.pathname === `${localeRoot}/signup`;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { signup } from "@/app/[locale]/actions";
+import { SubmitButton } from "@/components/submit-button";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
@@ -60,9 +61,9 @@ export default async function SignupPage({
         <span className="field-hint" id="password-hint">
           {dictionary.auth.passwordHint}
         </span>
-        <button className="button button-primary button-full" type="submit">
+        <SubmitButton pendingLabel={dictionary.auth.signupPending}>
           {dictionary.auth.signupAction}
-        </button>
+        </SubmitButton>
       </form>
       <p className="auth-footer">
         {dictionary.auth.hasAccount}{" "}
