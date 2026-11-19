@@ -65,12 +65,15 @@ as $$
 declare
   plot_area numeric(12,3);
 begin
+  -- Updating a plot's non-key area column takes FOR NO KEY UPDATE. FOR SHARE
+  -- is the weakest plot-row lock that conflicts with it; FOR KEY SHARE would
+  -- allow both writes to proceed and could admit a stale-area check.
   select plots.area_hectares
   into plot_area
   from public.plots
   where plots.id = new.plot_id
     and plots.farm_id = new.farm_id
-  for key share;
+  for share;
 
   if not found then
     raise foreign_key_violation using
@@ -91,8 +94,10 @@ before insert or update of farm_id, plot_id, cultivated_area_hectares
 on public.crop_cycles
 for each row execute function public.enforce_crop_cycle_plot_area();
 
--- Keep the invariant true when a plot is resized as well. The plot row lock
--- serializes this check with concurrent crop-cycle writes.
+-- Keep the invariant true when a plot is resized as well. PostgreSQL locks the
+-- plot row before this BEFORE UPDATE trigger runs, while the crop-cycle path
+-- locks the same plot row before writing its cycle. This trigger deliberately
+-- takes no crop-cycle row locks, keeping the shared lock order plot -> cycle.
 create or replace function public.guard_plot_area_for_crop_cycles()
 returns trigger
 language plpgsql
