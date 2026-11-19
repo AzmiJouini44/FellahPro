@@ -138,6 +138,23 @@ Concurrent onboarding submissions for the same user therefore serialize, and
 later submissions return the membership created by the first transaction
 instead of creating duplicate farms.
 
+## Plot management
+
+Mission 3A reuses the existing `plots` table without a schema migration. The
+interface exposes only the fields already supported for standalone plot
+management: name, area in hectares, and notes. Activity assignment remains
+unset until the Activities module is implemented.
+
+All plot reads and mutations are scoped to the current workspace derived from
+the authenticated session. A plot UUID from a URL or form is treated only as an
+untrusted reference and is always combined with the authorized farm ID. The
+existing RLS matrix remains authoritative: every member can read plots, owners
+and workers can create or edit them, and only owners can delete them.
+
+Plot deletion uses the existing restrictive crop-cycle foreign key. A referenced
+plot is preserved and the application reports that dependency instead of
+cascading or deleting crop-cycle data.
+
 ## Deliberately deferred
 
 - The Mission 2 dashboard is an authenticated placeholder; operational feature

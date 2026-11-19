@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
 import { SubmitButton } from "./submit-button";
+import { AppNavLink } from "./app-nav-link";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -31,14 +32,18 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
           <strong>{farmName}</strong>
         </div>
         <nav className="app-nav" aria-label={dictionary.nav.mainLabel}>
-          <Link className="app-nav-link is-active" href={`/${locale}/app#overview`}>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app#overview`}>
             <span aria-hidden="true">⌂</span>
             {dictionary.nav.overview}
-          </Link>
-          <Link className="app-nav-link" href={`/${locale}/app#farm`}>
+          </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app#farm`} match="none">
             <span aria-hidden="true">◇</span>
             {dictionary.nav.farm}
-          </Link>
+          </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app/plots`} match="prefix">
+            <span aria-hidden="true">▱</span>
+            {dictionary.nav.plots}
+          </AppNavLink>
         </nav>
         <div className="sidebar-footer">
           <div className="account-summary">
@@ -81,14 +86,14 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
         </header>
         <main className="app-content">{children}</main>
         <nav className="mobile-bottom-nav" aria-label={dictionary.nav.mainLabel}>
-          <Link href={`/${locale}/app#overview`}>
+          <AppNavLink href={`/${locale}/app#overview`}>
             <span aria-hidden="true">⌂</span>
             {dictionary.appShell.mobileHome}
-          </Link>
-          <Link href={`/${locale}/app#farm`}>
-            <span aria-hidden="true">◇</span>
-            {dictionary.appShell.mobileFarm}
-          </Link>
+          </AppNavLink>
+          <AppNavLink href={`/${locale}/app/plots`} match="prefix">
+            <span aria-hidden="true">▱</span>
+            {dictionary.appShell.mobilePlots}
+          </AppNavLink>
           <form action={logout}>
             <input name="locale" type="hidden" value={locale} />
             <button type="submit">

@@ -12,3 +12,16 @@ export function formatTnd(amount: number, locale: Locale) {
     maximumFractionDigits: 3,
   }).format(amount);
 }
+
+export function formatAreaHectares(area: number, locale: Locale) {
+  return new Intl.NumberFormat(getNumberLocale(locale), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  }).format(area);
+}
+
+export function formatDate(date: string, locale: Locale) {
+  return new Intl.DateTimeFormat(getNumberLocale(locale), {
+    dateStyle: "medium",
+  }).format(new Date(date));
+}
