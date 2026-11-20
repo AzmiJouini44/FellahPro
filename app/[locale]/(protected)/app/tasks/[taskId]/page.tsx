@@ -4,6 +4,7 @@ import { DeleteTaskControl } from "@/components/delete-task-control";
 import { TaskBreadcrumbs } from "@/components/task-breadcrumbs";
 import { TaskMissing } from "@/components/task-missing";
 import { TaskReminderRefresh } from "@/components/task-reminder-refresh";
+import { OperationHistory } from "@/components/operation-history";
 import { TaskDueBadge, TaskPriorityBadge, TaskStatusBadge, taskMemberLabel } from "@/components/task-status";
 import { TaskStatusControl } from "@/components/task-status-control";
 import { isLocale } from "@/i18n/config";
@@ -54,6 +55,7 @@ export default async function TaskDetailsPage({ params, searchParams }: PageProp
         </dl>
       </section>
     </div>
+    <OperationHistory locale={locale} taskId={task.id} />
     <footer className="record-meta"><span>{text.details.createdAt}: {formatUtcDate(task.created_at, locale)}</span><span>{text.details.updatedAt}: {formatUtcDate(task.updated_at, locale)}</span></footer>
   </article>;
 }

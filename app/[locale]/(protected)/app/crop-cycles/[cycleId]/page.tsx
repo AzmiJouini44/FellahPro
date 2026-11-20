@@ -5,6 +5,7 @@ import { CropCycleMissing } from "@/components/crop-cycle-missing";
 import { CropCycleStatusBadge } from "@/components/crop-cycle-status";
 import { DeleteCropCycleControl } from "@/components/delete-crop-cycle-control";
 import { RecordActivity } from "@/components/record-activity";
+import { OperationHistory } from "@/components/operation-history";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { canDeleteCropCycles, canEditCropCycles } from "@/lib/crop-cycle-validation";
@@ -61,6 +62,7 @@ export default async function CropCycleDetailsPage({
         <p>{cycle.notes?.trim() || dictionary.details.noNotes}</p>
       </section>
       <RecordActivity locale={locale} activityId={cycle.activity_id} activities={activities} />
+      <OperationHistory locale={locale} cycleId={cycle.id} />
       <footer className="record-meta">
         <span>{dictionary.details.createdAt}: {formatDate(cycle.created_at, locale)}</span>
         <span>{dictionary.details.updatedAt}: {formatDate(cycle.updated_at, locale)}</span>
