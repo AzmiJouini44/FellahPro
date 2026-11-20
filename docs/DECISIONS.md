@@ -155,6 +155,28 @@ Plot deletion uses the existing restrictive crop-cycle foreign key. A referenced
 plot is preserved and the application reports that dependency instead of
 cascading or deleting crop-cycle data.
 
+## Crop-cycle management
+
+Mission 3B adds a forward migration rather than changing the applied initial
+schema. The original `crop_cycles` table required an activity even though the
+Activities module is deliberately deferred, and exposed only one ambiguous end
+date. The migration makes `activity_id` optional, preserves the selected plot's
+activity automatically when one exists, and separates expected and actual
+harvest dates. It also adds cultivated area and notes because these values are
+part of the operational crop-cycle record requested by the module.
+
+Expected and actual harvest dates cannot precede planting, and completed cycles
+must have an actual harvest date. A database trigger locks and verifies the
+selected plot so cultivated area cannot exceed plot area, including during
+concurrent writes. A companion plot trigger prevents later plot resizing from
+invalidating existing cycles.
+
+Every crop-cycle read and mutation combines an untrusted cycle or plot UUID with
+the farm derived from the authenticated workspace. The existing RLS matrix is
+unchanged: all members read, owners and workers create or update, and only
+owners delete. Existing task, transaction, and inventory foreign keys remain
+restrictive, so linked operational records block deletion instead of cascading.
+
 ## Deliberately deferred
 
 - The Mission 2 dashboard is an authenticated placeholder; operational feature

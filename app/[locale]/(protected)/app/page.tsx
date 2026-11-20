@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { getCropCycleSummary } from "@/lib/crop-cycles";
 import { formatTnd } from "@/lib/format";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { getMissingWorkspaceRedirect } from "@/lib/workspace-routing";
@@ -35,6 +37,7 @@ export default async function DashboardPage({
       ? dictionary.roles[workspace.role as keyof typeof dictionary.roles]
       : dictionary.roles.unknown;
   const displayName = workspace.profile.full_name ?? dictionary.dashboard.fallbackName;
+  const cycleSummary = await getCropCycleSummary(workspace.farm.id);
 
   return (
     <div className="dashboard-page">
@@ -68,6 +71,26 @@ export default async function DashboardPage({
           <small>{dictionary.dashboard.trackedBalanceHint}</small>
         </article>
       </section>
+
+      {!cycleSummary.error ? (
+        <section className="dashboard-cycle-summary">
+          <div className="dashboard-section-heading">
+            <div>
+              <h2>{dictionary.dashboard.cropCyclesSummary}</h2>
+              <p>{dictionary.dashboard.cropCyclesSummaryHint}</p>
+            </div>
+            <Link className="button button-secondary button-small" href={`/${locale}/app/crop-cycles`}>
+              {dictionary.dashboard.viewCropCycles}
+            </Link>
+          </div>
+          <div className="cycle-summary-grid">
+            <article><span>{dictionary.dashboard.totalCycles}</span><strong>{cycleSummary.total}</strong></article>
+            <article><span>{dictionary.dashboard.activeCycles}</span><strong>{cycleSummary.active}</strong></article>
+            <article><span>{dictionary.dashboard.plannedCycles}</span><strong>{cycleSummary.planned}</strong></article>
+            <article><span>{dictionary.dashboard.recentHarvests}</span><strong>{cycleSummary.recentHarvests}</strong></article>
+          </div>
+        </section>
+      ) : null}
 
       <section className="readiness-grid">
         <article className="readiness-card is-ready">

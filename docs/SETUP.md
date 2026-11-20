@@ -82,5 +82,21 @@ npm run build
 ```
 
 For database validation, apply all migrations to a clean disposable database,
-then run every SQL file in `supabase/tests`. These scripts use transactions and
-roll back their fixtures, but a disposable database is still required.
+then run every SQL file in `supabase/tests` using `psql` with `-X`,
+`-v ON_ERROR_STOP=1`, and `-f <test-file>`. The RLS suites roll back their fixtures.
+The area concurrency suite uses two independent `dblink` sessions and commits
+fixtures to exercise real lock waits for both INSERT and UPDATE orderings
+against a concurrent plot resize.
+It requires an administrative database connection, the `dblink` extension in
+the `extensions` schema, and server-side loopback connectivity. An existing
+extension in another schema is rejected rather than relocated. Each wait polls
+for the expected backend PID and blocker with a 10-second deadline.
+
+Successful concurrency runs disconnect both sessions and remove fixtures,
+helper functions, and the temporary PID table. The extension/schema are removed
+only when that run created them. If `psql` exits on failure, its connections
+close and open remote transactions roll back, but already-committed fixtures,
+helpers, or a newly installed extension/schema may remain. A rerun cleans stale
+fixtures/helpers; discard the disposable database after a failure to guarantee
+full cleanup. Do not run parallel copies against the same database because the
+test uses fixed fixture IDs.

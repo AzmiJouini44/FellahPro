@@ -95,6 +95,8 @@ insert into public.crop_cycles (
   plot_id,
   crop_name,
   started_on,
+  expected_harvest_on,
+  cultivated_area_hectares,
   status
 )
 values (
@@ -104,6 +106,8 @@ values (
   '31000000-0000-0000-0000-000000000001',
   'Farm A crop',
   '2026-01-01',
+  '2026-06-01',
+  1.5,
   'active'
 );
 

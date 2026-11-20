@@ -247,7 +247,9 @@ insert into public.crop_cycles (
   activity_id,
   plot_id,
   crop_name,
-  started_on
+  started_on,
+  expected_harvest_on,
+  cultivated_area_hectares
 )
 values (
   '36000000-0000-0000-0000-000000000001',
@@ -255,7 +257,9 @@ values (
   '35000000-0000-0000-0000-000000000001',
   '34000000-0000-0000-0000-000000000003',
   'Wheat',
-  '2026-11-19'
+  '2026-11-19',
+  '2027-06-01',
+  3
 );
 
 do $$
