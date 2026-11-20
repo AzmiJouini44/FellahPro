@@ -1,0 +1,33 @@
+"use client";
+
+import { useActionState, useEffect, useRef, useState } from "react";
+import { deleteTask } from "@/app/[locale]/(protected)/app/tasks/actions";
+import type { Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
+
+export function DeleteTaskControl({ locale, id, title }: { locale: Locale; id: string; title: string }) {
+  const text = getDictionary(locale).tasks.delete;
+  const [confirming, setConfirming] = useState(false);
+  const [state, action, pending] = useActionState(deleteTask.bind(null, id), { message: null });
+  const trigger = useRef<HTMLButtonElement>(null);
+  const confirm = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    if (confirming) confirm.current?.focus();
+    else if (wasConfirming.current) trigger.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
+  if (!confirming) return <button ref={trigger} type="button" className="button button-danger" onClick={() => setConfirming(true)}>{text.action}</button>;
+  return <div className="delete-confirmation" role="group" aria-labelledby="task-delete-title" aria-describedby="task-delete-description">
+    <strong id="task-delete-title">{text.title}</strong>
+    <p id="task-delete-description">{text.description.replace("{title}", title)}</p>
+    {state.message ? <p className="form-message error" role="alert">{state.message}</p> : null}
+    <div className="delete-confirmation-actions">
+      <form action={action}>
+        <input type="hidden" name="locale" value={locale} />
+        <button ref={confirm} type="submit" className="button button-danger" disabled={pending}>{pending ? text.deleting : text.confirm}</button>
+      </form>
+      <button type="button" className="button button-secondary" disabled={pending} onClick={() => setConfirming(false)}>{text.cancel}</button>
+    </div>
+  </div>;
+}

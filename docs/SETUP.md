@@ -70,6 +70,7 @@ the data access. The browser never supplies a trusted user identifier.
 - `/{locale}/app/plots`: plot management and optional economic activity assignment
 - `/{locale}/app/crop-cycles`: crop-cycle management and optional economic activity assignment
 - `/{locale}/app/activities`: economic activity categories, filters, details, and owner management
+- `/{locale}/app/tasks`: task lists, reminders, filters, details, and permitted task management
 
 Supported locale values are `fr` and `ar`. The Arabic layout sets `dir="rtl"`.
 Displayed monetary amounts use Tunisian dinar formatting with three fractional
@@ -84,6 +85,22 @@ dates. Referenced categories cannot be deleted; deactivate them to retain histor
 Unchanged edit selectors preserve current assignments. New crop cycles inherit
 the selected plot's activity only when no explicit assignment/unassignment is
 submitted. Plot edits never bulk-update existing crop cycles.
+
+Mission 3D reuses `public.tasks` without a migration or new environment variables.
+Owners can manage and delete tasks; workers can create and edit; accountants
+have read-only access. Assignees must be current members of the selected farm.
+Task links support an optional economic activity and at most one crop cycle or
+animal group. A linked cycle/group supplies its matching activity. Unclassified
+cycles must receive an activity in Crop Cycles before a task can reference them.
+Existing inactive categories remain available for historical work.
+
+Task reminders use calendar dates in `Africa/Tunis`. Pending means `a_faire`
+or `en_cours`; overdue means a pending task due before today. Upcoming includes
+today and the next six days. Completed and cancelled tasks do not become
+overdue. The dashboard shows exact farm-scoped pending, due-today, overdue,
+completed, and upcoming counts. Read screens refresh while visible every minute
+and on returning to the page. Reminders are displayed inside the application;
+there is no external notification or background delivery service.
 
 ## Validation
 
@@ -103,6 +120,11 @@ and each of the six dependency deletion restrictions. Run it alongside all
 existing suites, including the four area-concurrency orderings. The pull-request
 workflow also runs `npm test`; database suites require a separate disposable
 PostgreSQL/Supabase environment and are not currently run by that workflow.
+Run `tasks_crud_rls.sql` as well. It tests task CRUD, all status/priority values,
+assignee membership, cross-farm and composite-reference rejection, the role
+matrix, derived reminder queries, and unassignment when a member leaves.
+There are eight SQL suites in total; run them all against the same disposable
+database after applying the four migrations in filename order.
 The area concurrency suite uses two independent `dblink` sessions and commits
 fixtures to exercise real lock waits for both INSERT and UPDATE orderings
 against a concurrent plot resize.

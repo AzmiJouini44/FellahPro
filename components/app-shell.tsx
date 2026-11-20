@@ -56,6 +56,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">◈</span>
             {dictionary.nav.activities}
           </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app/tasks`} match="prefix">
+            <span aria-hidden="true">☑</span>
+            {dictionary.nav.tasks}
+          </AppNavLink>
         </nav>
         <div className="sidebar-footer">
           <div className="account-summary">
@@ -114,11 +118,15 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">◈</span>
             {dictionary.appShell.mobileActivities}
           </AppNavLink>
+          <AppNavLink href={`/${locale}/app/tasks`} match="prefix">
+            <span aria-hidden="true">☑</span>
+            {dictionary.appShell.mobileTasks}
+          </AppNavLink>
           <form action={logout}>
             <input name="locale" type="hidden" value={locale} />
             <button type="submit">
               <span aria-hidden="true">↪</span>
-              {dictionary.auth.logout}
+              {dictionary.appShell.mobileLogout}
             </button>
           </form>
         </nav>

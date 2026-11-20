@@ -222,6 +222,56 @@ used by the SSR actions, with a repository substitute for unit tests. Database
 security is tested separately under authenticated/anonymous roles against real
 PostgreSQL; unit substitutes are not treated as hosted Supabase verification.
 
+## Tasks and in-app reminders
+
+Mission 3D reuses `public.tasks`, its existing indexes, audit trigger, composite
+foreign keys and RLS. No migration or optional start date is needed: `due_on`
+supports the requested scheduling and reminders. Task statuses remain
+`a_faire`, `en_cours`, `terminee`, `annulee`; priorities remain `basse`, `normale`,
+`haute`. Status transitions can reopen or cancel a task without rewriting its
+due date or relationships. Application titles are normalized to 2–120
+characters and descriptions to at most 2,000; historical rows are not rewritten.
+
+All reads, counts, option lookups, and mutations use the authenticated SSR
+client and the farm selected from actual membership. The user's identity for
+“my tasks” comes from authenticated claims. Submitted farm IDs, user identity,
+roles, audit values, and other fields are excluded from task writes. Owners
+read/create/update/delete; workers read/create/update any task in their farm;
+accountants read only, including when assigned a task. Server-side role checks
+complement RLS, which remains authoritative after membership changes.
+
+Activity/cycle/group options and assignees are resolved within the selected
+farm. Assignees may be any current member, including an accountant. A task may
+link to at most one crop cycle or animal group, with the same activity as that
+parent. The server derives or verifies this activity independently of the form.
+An unclassified cycle cannot be linked until its activity is assigned. Inactive
+activities and all existing activity kinds remain valid. A full edit explicitly
+sets/clears optional fields; quick status changes submit only the status.
+Database foreign keys catch races with membership or parent changes. Leaving a
+farm clears that member's task assignments without deleting the tasks. Task
+deletion requires confirmation and does not modify its parent records.
+
+Due dates are calendar dates in `Africa/Tunis`, independent of the browser or
+server machine's time zone. Pending is `a_faire`/`en_cours`. Overdue is derived
+from a pending status and `due_on < today`. Upcoming is today through today + 6
+days inclusive; it includes due-today tasks. Missing due dates stay pending but
+are excluded from dated reminder counts. Completed/cancelled tasks never become
+overdue; no redundant overdue state is stored. Past due dates are valid.
+
+Lists use stable due-date/creation-time/UUID ordering with 24-row pages and
+combined title/status/priority/assignee/date filters. Assignee and association
+options are paged to avoid the API row limit. Dashboard counts are exact
+farm-scoped queries, independent of list pagination. As with activity summaries,
+these separate counts are an overview rather than a transactional snapshot.
+Visible list/detail/dashboard screens refresh every minute and on focus or
+visibility return; edit forms are excluded. This provides in-app reminders
+only, without email, SMS, browser push, or background notification delivery.
+
+The same validation/authorization service powers server actions and unit
+tests; SQL tests independently exercise the existing policies and constraints
+with real authenticated/anonymous PostgreSQL roles. Neither is a substitute
+for hosted Supabase authentication or browser end-to-end validation.
+
 ## Deliberately deferred
 
 - Farm switching and dated agricultural field operations remain deferred.
