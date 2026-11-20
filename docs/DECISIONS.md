@@ -340,9 +340,79 @@ verified record; the ordinary task service validates the final submitted
 references again. Task pages link back to the group. These additions preserve
 existing assignee, role, date and cross-farm protections.
 
+## Agricultural field operations
+
+Mission 5 introduces `agricultural_operations` in a new migration. Existing
+`activities` remain economic categories and `tasks` remain planned work. An
+operation records work already performed on a required plot: soil preparation,
+ploughing, irrigation, fertilization, pruning, planting, harvesting or other
+work. No previous migration or existing operational record is rewritten.
+
+The primary form requires only type, performed date and plot. A crop cycle is
+optional, with a composite foreign key enforcing that it belongs to that exact
+plot and farm. Optional descriptions, notes, quantity/unit, classification and
+task links are under additional details. Application dates must be real calendar
+days no later than today in `Africa/Tunis`; preparation can legitimately precede
+planting, so dates are not constrained to a crop cycle's planned season.
+Quantities are positive `numeric(14,3)` with an explicit supported unit, or both
+quantity/unit are absent. Arabic/Persian digits and decimal separators are
+normalized. Quantities never determine financial amounts.
+
+An optional economic category defaults from a verified cycle or plot, including
+inactive categories. It is an independent same-farm classification that the
+farmer may replace or clear; no parent is reclassified. Unclassified cycles are
+valid. An optional task is a same-farm reference, without automatically changing
+its status, assignee, due date or category. Plot, cycle and task details show
+operation history and link to the full filtered list. Task deletion clears only
+the optional operation link, preserving recorded work. Plot, cycle, category
+and attributed expense deletion is restricted while referenced. Owner-confirmed
+operation deletion leaves ledger and task records unchanged. Whole-farm deletion
+still cascades, and profile deletion can clear audit identity under Mission 1's
+ownership-transfer requirements.
+
+Every loader, reference lookup and mutation uses the authenticated Supabase SSR
+client with the workspace derived from actual membership. Farm, identity, role
+and audit fields are excluded from submitted write data. RLS allows members to
+read, owners/workers to create and edit, and owners to delete. Accountants are
+read-only for field operations. Column-level UPDATE permissions prevent moving
+an operation to another farm or replacing its identity/audit fields. Composite
+foreign keys protect all same-farm associations independently of application
+validation. Joined views use `security_invoker` and underlying RLS.
+
+Cost means explicit attribution of one **existing whole expense ledger line**,
+chosen by an owner. Operations contain no duplicated amount, price or estimated
+cost. The linked line must be a same-farm `depense` without an animal group, with
+the same economic category and, if the header specifies one, the same crop
+cycle. A unique constraint prevents attributing the same line to multiple
+operations, including concurrent claims. Shared-line allocation is unsupported;
+no amount is split or inferred. The detail view reads the generated ledger
+amount, including later legitimate price corrections and settled transactions.
+Operation quantities and operation deletion never create or change financial
+entries. Existing profit/loss calculations continue to read only the ledger.
+
+Only owners can link, unlink or change an attributed operation's financial
+context. Workers may still edit its field data while preserving that context.
+Attribution locks the ledger header and line with `FOR SHARE`, which conflicts
+with non-key updates. Parent triggers reject incompatible header reclassification
+or moving an attributed line; they read operation references without locking
+operation rows, avoiding the reverse operation/ledger lock order. Concurrent
+writers serialize or receive a constraint error; PostgreSQL can still abort a
+deadlocked multi-row transaction, which callers must retry explicitly. Real
+two-connection tests verify both header/attribution orderings, concurrent unique
+claims and an existing-operation UPDATE. They assert exact blocking PIDs with
+bounded polling and inspect final committed state.
+
+Lists combine literal search, type/date/plot/cycle filters and optional task
+history with stable 24-row pagination. Read pages expose loading, empty, error
+and success states. Mobile navigation keeps six primary destinations with
+field work prominent; economic categories and sign-out are in the header's
+More menu. French and Arabic share the same labels, RTL layout and Tunisian
+currency formatting. No notifications, agricultural prescriptions or automatic
+task/crop status changes are introduced.
+
 ## Deliberately deferred
 
-- Farm switching and dated agricultural field operations remain deferred.
+- Farm switching remains deferred.
 - No marketplace, subscription, or AI tables are created.
 - No database changes are applied automatically; the migration must be reviewed
   and applied by the project owner.

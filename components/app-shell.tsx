@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 
 import { SubmitButton } from "./submit-button";
 import { AppNavLink } from "./app-nav-link";
+import { MobileMoreNavigation } from "./mobile-more-navigation";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -51,6 +52,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
           >
             <span aria-hidden="true">◎</span>
             {dictionary.nav.cropCycles}
+          </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app/operations`} match="prefix">
+            <span aria-hidden="true">❧</span>
+            {dictionary.nav.operations}
           </AppNavLink>
           <AppNavLink className="app-nav-link" href={`/${locale}/app/activities`} match="prefix">
             <span aria-hidden="true">◈</span>
@@ -100,11 +105,7 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <Link className="language-link" href={`/${alternateLocale}/app`} aria-label={dictionary.nav.languageLabel}>
               {dictionary.nav.language}
             </Link>
-            <form action={logout}><input name="locale" type="hidden" value={locale} />
-              <button className="mobile-logout" type="submit" aria-label={dictionary.auth.logout}>
-                <span aria-hidden="true">↪</span> {dictionary.appShell.mobileLogout}
-              </button>
-            </form>
+            <MobileMoreNavigation locale={locale} />
           </div>
         </header>
         <main className="app-content">{children}</main>
@@ -121,9 +122,9 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">◎</span>
             {dictionary.appShell.mobileCycles}
           </AppNavLink>
-          <AppNavLink href={`/${locale}/app/activities`} match="prefix">
-            <span aria-hidden="true">◈</span>
-            {dictionary.appShell.mobileActivities}
+          <AppNavLink href={`/${locale}/app/operations`} match="prefix">
+            <span aria-hidden="true">❧</span>
+            {dictionary.appShell.mobileOperations}
           </AppNavLink>
           <AppNavLink href={`/${locale}/app/tasks`} match="prefix">
             <span aria-hidden="true">☑</span>
