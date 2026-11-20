@@ -14,7 +14,7 @@ export default async function EditCropCyclePage({ params }: PageProps<"/[locale]
   const { locale, cycleId } = await params;
   if (!isLocale(locale)) notFound();
 
-  const { workspace, cycle, plots, error } = await getCurrentFarmCropCycle(locale, cycleId);
+  const { workspace, cycle, plots, activities, error } = await getCurrentFarmCropCycle(locale, cycleId);
   if (!workspace.farm) redirect(`/${locale}/onboarding`);
   if (!canEditCropCycles(workspace.role)) redirect(`/${locale}/app/crop-cycles`);
   if (error) redirect(`/${locale}/app/crop-cycles`);
@@ -39,10 +39,12 @@ export default async function EditCropCyclePage({ params }: PageProps<"/[locale]
             cultivatedAreaHectares: cycle.cultivated_area_hectares,
             status: cycle.status,
             notes: cycle.notes ?? "",
+            activityId: cycle.activity_id,
           }}
           locale={locale}
           mode="edit"
           plots={plots}
+          activities={activities}
         />
       </div>
     </div>

@@ -79,3 +79,14 @@ test("plot identifiers must be UUIDs before database access", () => {
   assert.equal(isUuid("../../another-farm"), false);
   assert.equal(isUuid("not-a-uuid"), false);
 });
+
+test("plots support optional activity assignment without treating omission as unassignment", () => {
+  const input = { name: "North plot", areaHectares: "1", notes: "" };
+  const unchanged = validatePlotInput(input);
+  assert.ok(unchanged.success);
+  if (unchanged.success) assert.ok(!("activityId" in unchanged.data));
+  const unassigned = validatePlotInput({ ...input, activityId: "" });
+  if (unassigned.success) assert.equal(unassigned.data.activityId, null);
+  else assert.fail("explicit unassignment should be accepted");
+  assert.equal(validatePlotInput({ ...input, activityId: "invalid" }).success, false);
+});

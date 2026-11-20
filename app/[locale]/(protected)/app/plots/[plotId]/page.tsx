@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { DeletePlotControl } from "@/components/delete-plot-control";
+import { RecordActivity } from "@/components/record-activity";
 import { PlotMissing } from "@/components/plot-missing";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -22,7 +23,7 @@ export default async function PlotDetailsPage({
     notFound();
   }
 
-  const { workspace, plot, error } = await getCurrentFarmPlot(locale, plotId);
+  const { workspace, plot, activities, error } = await getCurrentFarmPlot(locale, plotId);
 
   if (!workspace.farm) {
     redirect(`/${locale}/onboarding`);
@@ -95,6 +96,8 @@ export default async function PlotDetailsPage({
           <p>{plot.notes?.trim() || dictionary.details.noNotes}</p>
         </div>
       </section>
+
+      <RecordActivity locale={locale} activityId={plot.activity_id} activities={activities} />
 
       <footer className="record-meta">
         <span>{dictionary.details.createdAt}: {formatDate(plot.created_at, locale)}</span>

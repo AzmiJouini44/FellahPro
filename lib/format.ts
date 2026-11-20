@@ -4,6 +4,14 @@ export function getNumberLocale(locale: Locale) {
   return locale === "ar" ? "ar-TN" : "fr-TN";
 }
 
+export function formatCount(count: number, locale: Locale) {
+  return new Intl.NumberFormat(getNumberLocale(locale)).format(count);
+}
+
+export function formatUtcDate(date: string, locale: Locale) {
+  return new Intl.DateTimeFormat(getNumberLocale(locale), { dateStyle: "medium", timeZone: "UTC" }).format(new Date(date));
+}
+
 export function formatTnd(amount: number, locale: Locale) {
   return new Intl.NumberFormat(getNumberLocale(locale), {
     style: "currency",

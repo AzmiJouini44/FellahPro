@@ -52,6 +52,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">◎</span>
             {dictionary.nav.cropCycles}
           </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app/activities`} match="prefix">
+            <span aria-hidden="true">◈</span>
+            {dictionary.nav.activities}
+          </AppNavLink>
         </nav>
         <div className="sidebar-footer">
           <div className="account-summary">
@@ -105,6 +109,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
           <AppNavLink href={`/${locale}/app/crop-cycles`} match="prefix">
             <span aria-hidden="true">◎</span>
             {dictionary.appShell.mobileCycles}
+          </AppNavLink>
+          <AppNavLink href={`/${locale}/app/activities`} match="prefix">
+            <span aria-hidden="true">◈</span>
+            {dictionary.appShell.mobileActivities}
           </AppNavLink>
           <form action={logout}>
             <input name="locale" type="hidden" value={locale} />

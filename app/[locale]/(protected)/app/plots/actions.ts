@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { isCurrentFarmActivity } from "@/lib/activities";
+import { activityAssignmentPatch } from "@/lib/activity-validation";
 import {
   canDeletePlots,
   canEditPlots,
@@ -21,6 +23,7 @@ export type PlotActionState = {
     name?: string;
     areaHectares?: string;
     notes?: string;
+    activityId?: string;
   };
 };
 
@@ -39,6 +42,7 @@ function localizeValidationErrors(
     ...(errors.name ? { name: messages.invalidName } : {}),
     ...(errors.areaHectares ? { areaHectares: messages.invalidArea } : {}),
     ...(errors.notes ? { notes: messages.notesTooLong } : {}),
+    ...(errors.activityId ? { activityId: getDictionary(locale).activities.assignment.invalid } : {}),
   };
 }
 
@@ -57,6 +61,7 @@ function readPlotInput(formData: FormData) {
     name: formData.get("name"),
     areaHectares: formData.get("areaHectares"),
     notes: formData.get("notes"),
+    activityId: formData.has("activityId") ? formData.get("activityId") : undefined,
   });
 }
 
@@ -82,6 +87,9 @@ export async function createPlot(
   }
 
   const supabase = await createClient();
+  if (!await isCurrentFarmActivity(supabase, workspace.farm.id, validated.data.activityId)) {
+    return { message: dictionary.activities.assignment.invalid, errors: { activityId: dictionary.activities.assignment.invalid } };
+  }
   const { data, error } = await supabase
     .from("plots")
     .insert({
@@ -89,6 +97,7 @@ export async function createPlot(
       name: validated.data.name,
       area_hectares: validated.data.areaHectares,
       notes: validated.data.notes,
+      ...activityAssignmentPatch(validated.data.activityId),
     })
     .select("id")
     .single<{ id: string }>();
@@ -97,7 +106,7 @@ export async function createPlot(
     return { message: dictionary.plots.errors.createFailed };
   }
 
-  revalidatePath(`/${locale}/app`);
+  revalidatePath(`/${locale}/app`, "layout");
   revalidatePath(`/${locale}/app/plots`);
   redirect(`/${locale}/app/plots/${data.id}?success=created`);
 }
@@ -129,12 +138,16 @@ export async function updatePlot(
   }
 
   const supabase = await createClient();
+  if (!await isCurrentFarmActivity(supabase, workspace.farm.id, validated.data.activityId)) {
+    return { message: dictionary.activities.assignment.invalid, errors: { activityId: dictionary.activities.assignment.invalid } };
+  }
   const { data, error } = await supabase
     .from("plots")
     .update({
       name: validated.data.name,
       area_hectares: validated.data.areaHectares,
       notes: validated.data.notes,
+      ...activityAssignmentPatch(validated.data.activityId),
     })
     .eq("farm_id", workspace.farm.id)
     .eq("id", plotId)
@@ -149,7 +162,7 @@ export async function updatePlot(
     return { message: dictionary.plots.errors.notFound };
   }
 
-  revalidatePath(`/${locale}/app`);
+  revalidatePath(`/${locale}/app`, "layout");
   revalidatePath(`/${locale}/app/plots`);
   revalidatePath(`/${locale}/app/plots/${plotId}`);
   redirect(`/${locale}/app/plots/${plotId}?success=updated`);
@@ -194,7 +207,7 @@ export async function deletePlot(
     return { message: dictionary.plots.errors.notFound };
   }
 
-  revalidatePath(`/${locale}/app`);
+  revalidatePath(`/${locale}/app`, "layout");
   revalidatePath(`/${locale}/app/plots`);
   redirect(`/${locale}/app/plots?success=deleted`);
 }

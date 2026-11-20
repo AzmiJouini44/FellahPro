@@ -19,7 +19,7 @@ export default async function EditPlotPage({
     notFound();
   }
 
-  const { workspace, plot, error } = await getCurrentFarmPlot(locale, plotId);
+  const { workspace, plot, activities, error } = await getCurrentFarmPlot(locale, plotId);
 
   if (!workspace.farm) {
     redirect(`/${locale}/onboarding`);
@@ -57,9 +57,11 @@ export default async function EditPlotPage({
             name: plot.name,
             areaHectares: plot.area_hectares,
             notes: plot.notes ?? "",
+            activityId: plot.activity_id,
           }}
           locale={locale}
           mode="edit"
+          activities={activities}
         />
       </div>
     </div>

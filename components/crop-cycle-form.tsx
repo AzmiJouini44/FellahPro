@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
+import { ActivitySelect } from "@/components/activity-select";
+import type { ActivityOption } from "@/lib/activity-service";
 
 import type { CropCycleActionState } from "@/app/[locale]/(protected)/app/crop-cycles/actions";
 import type { Locale } from "@/i18n/config";
@@ -19,6 +21,7 @@ type CropCycleFormProps = {
   locale: Locale;
   mode: "create" | "edit";
   plots: CropCyclePlot[];
+  activities: ActivityOption[];
   initialValues?: {
     plotId: string;
     cropName: string;
@@ -28,6 +31,7 @@ type CropCycleFormProps = {
     cultivatedAreaHectares: number;
     status: CropCycleStatus;
     notes: string;
+    activityId: string | null;
   };
 };
 
@@ -39,6 +43,7 @@ export function CropCycleForm({
   locale,
   mode,
   plots,
+  activities,
   initialValues,
 }: CropCycleFormProps) {
   const dictionary = getDictionary(locale).cropCycles;
@@ -87,6 +92,9 @@ export function CropCycleForm({
           <span className="field-error" id="cycle-plot-error">{state.errors.plotId}</span>
         ) : null}
       </div>
+
+      <ActivitySelect locale={locale} activities={activities} mode={mode} inheritFromPlot
+        initialActivityId={initialValues?.activityId} error={state.errors?.activityId} />
 
       <div className="form-field">
         <label htmlFor="cycle-crop">{form.cropName}</label>

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { activityAssignmentPatch, newCycleActivity } from "../lib/activity-validation";
 
 import {
   canDeleteCropCycles,
@@ -105,4 +106,26 @@ test("crop cycle role capabilities match existing RLS", () => {
   assert.equal(canDeleteCropCycles("owner"), true);
   assert.equal(canDeleteCropCycles("worker"), false);
   assert.equal(canDeleteCropCycles("accountant"), false);
+});
+
+test("unrelated crop edits preserve explicit assignments even after the plot activity changes", () => {
+  const existingActivity = "30000000-0000-0000-0000-000000000001";
+  const changedPlotActivity = "30000000-0000-0000-0000-000000000002";
+  const validation = validateCropCycleInput({ ...validInput, cropName: "Updated wheat" });
+  assert.ok(validation.success);
+  if (!validation.success) return;
+  assert.ok(!("activityId" in validation.data));
+  const persisted = { activity_id: existingActivity, ...activityAssignmentPatch(validation.data.activityId) };
+  assert.equal(persisted.activity_id, existingActivity);
+  assert.notEqual(persisted.activity_id, changedPlotActivity);
+  assert.equal(newCycleActivity(undefined, changedPlotActivity), changedPlotActivity);
+});
+
+test("crop assignments can be explicitly replaced or cleared and invalid references fail validation", () => {
+  for (const activityId of ["", "30000000-0000-0000-0000-000000000002"]) {
+    const result = validateCropCycleInput({ ...validInput, activityId });
+    assert.ok(result.success);
+    if (result.success) assert.deepEqual(activityAssignmentPatch(result.data.activityId), { activity_id: activityId || null });
+  }
+  assert.equal(validateCropCycleInput({ ...validInput, activityId: "../farm-b" }).success, false);
 });

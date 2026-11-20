@@ -66,11 +66,24 @@ the data access. The browser never supplies a trusted user identifier.
 - `/{locale}/signup`: account creation
 - `/{locale}/login`: sign in
 - `/{locale}/onboarding`: protected first-farm setup
-- `/{locale}/app`: protected application shell and dashboard placeholder
+- `/{locale}/app`: protected application shell and farm statistics
+- `/{locale}/app/plots`: plot management and optional economic activity assignment
+- `/{locale}/app/crop-cycles`: crop-cycle management and optional economic activity assignment
+- `/{locale}/app/activities`: economic activity categories, filters, details, and owner management
 
 Supported locale values are `fr` and `ar`. The Arabic layout sets `dir="rtl"`.
 Displayed monetary amounts use Tunisian dinar formatting with three fractional
 digits.
+
+Activities reuse the existing schema; Mission 3C has no migration or additional
+environment variables. Workers and accountants can view categories; only owners
+manage them. Owners and workers retain plot/cycle assignment permissions.
+Inactive categories remain visible in historical references and selectors.
+Creation-date filters refer to record creation in UTC, not farming-operation
+dates. Referenced categories cannot be deleted; deactivate them to retain history.
+Unchanged edit selectors preserve current assignments. New crop cycles inherit
+the selected plot's activity only when no explicit assignment/unassignment is
+submitted. Plot edits never bulk-update existing crop cycles.
 
 ## Validation
 
@@ -84,6 +97,12 @@ npm run build
 For database validation, apply all migrations to a clean disposable database,
 then run every SQL file in `supabase/tests` using `psql` with `-X`,
 `-v ON_ERROR_STOP=1`, and `-f <test-file>`. The RLS suites roll back their fixtures.
+This includes `activities_crud_rls.sql`, which verifies the role matrix,
+cross-farm INSERT/UPDATE references, nullable assignments, inactive history,
+and each of the six dependency deletion restrictions. Run it alongside all
+existing suites, including the four area-concurrency orderings. The pull-request
+workflow also runs `npm test`; database suites require a separate disposable
+PostgreSQL/Supabase environment and are not currently run by that workflow.
 The area concurrency suite uses two independent `dblink` sessions and commits
 fixtures to exercise real lock waits for both INSERT and UPDATE orderings
 against a concurrent plot resize.

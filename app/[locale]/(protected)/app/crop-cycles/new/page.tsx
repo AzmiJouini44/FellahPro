@@ -14,7 +14,7 @@ export default async function NewCropCyclePage({ params }: PageProps<"/[locale]/
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const { workspace, plots, error } = await listCurrentFarmCropCyclePlots(locale);
+  const { workspace, plots, activities, error } = await listCurrentFarmCropCyclePlots(locale);
   if (!workspace.farm) redirect(`/${locale}/onboarding`);
   if (!canEditCropCycles(workspace.role)) redirect(`/${locale}/app/crop-cycles`);
   const dictionary = getDictionary(locale).cropCycles;
@@ -42,7 +42,7 @@ export default async function NewCropCyclePage({ params }: PageProps<"/[locale]/
         <div><p className="eyebrow">{dictionary.newCycle.eyebrow}</p><h1>{dictionary.newCycle.title}</h1><p>{dictionary.newCycle.description}</p></div>
       </section>
       <div className="plot-form-card cycle-form-card">
-        <CropCycleForm action={createCropCycle} cancelHref={`/${locale}/app/crop-cycles`} locale={locale} mode="create" plots={plots} />
+        <CropCycleForm action={createCropCycle} cancelHref={`/${locale}/app/crop-cycles`} locale={locale} mode="create" plots={plots} activities={activities} />
       </div>
     </div>
   );
