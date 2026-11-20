@@ -126,13 +126,14 @@ export function getTaskDueState(task: { status: TaskStatus; due_on: string | nul
 
 export type TaskFilters = {
   search: string; status: "" | TaskStatus; priority: "" | TaskPriority;
-  assignee: string; dueFrom: string; dueTo: string; view: TaskView; page: number;
+  assignee: string; animalGroupId: string; dueFrom: string; dueTo: string; view: TaskView; page: number;
 };
 export type TaskFilterInput = Partial<Record<keyof TaskFilters, unknown>>;
 export type TaskQuery = {
   search?: string; status?: TaskStatus; priority?: TaskPriority;
   assignedTo?: string | null; dueFrom?: string; dueTo?: string; dueBefore?: string;
   pendingOnly?: boolean; page?: number;
+  animalGroupId?: string;
 };
 
 export function validateTaskFilters(input: TaskFilterInput):
@@ -142,6 +143,7 @@ export function validateTaskFilters(input: TaskFilterInput):
   const status = optionalText(input.status);
   const priority = optionalText(input.priority);
   const assignee = optionalText(input.assignee);
+  const animalGroupId = optionalText(input.animalGroupId);
   const from = optionalText(input.dueFrom);
   const to = optionalText(input.dueTo);
   const dueFrom = from === null ? null : normalizeDateDigits(from);
@@ -152,12 +154,13 @@ export function validateTaskFilters(input: TaskFilterInput):
   if (search === null || search.length > 120 || status === null || (status && !isTaskStatus(status)) ||
       priority === null || (priority && !isTaskPriority(priority)) ||
       assignee === null || (assignee && assignee !== "unassigned" && !isUuid(assignee)) ||
+      animalGroupId === null || (animalGroupId && !isUuid(animalGroupId)) ||
       dueFrom === null || (dueFrom && !isTaskDate(dueFrom)) || dueTo === null || (dueTo && !isTaskDate(dueTo)) ||
       (dueFrom && dueTo && dueFrom > dueTo) || viewText === null || !taskViews.includes(view as TaskView) ||
       page === null || (page && !/^[1-9]\d{0,5}$/.test(page))) return { success: false };
   return { success: true, data: {
     search, status: status as TaskFilters["status"], priority: priority as TaskFilters["priority"],
-    assignee, dueFrom, dueTo, view: view as TaskView, page: page ? Number(page) : 1,
+    assignee, animalGroupId, dueFrom, dueTo, view: view as TaskView, page: page ? Number(page) : 1,
   } };
 }
 
@@ -166,6 +169,7 @@ export function taskQuery(filters: TaskFilters, userId: string, dates: TaskDates
   if (filters.search) query.search = filters.search;
   if (filters.status) query.status = filters.status;
   if (filters.priority) query.priority = filters.priority;
+  if (filters.animalGroupId) query.animalGroupId = filters.animalGroupId;
   if (filters.assignee) query.assignedTo = filters.assignee === "unassigned" ? null : filters.assignee;
   if (filters.dueFrom) query.dueFrom = filters.dueFrom;
   if (filters.dueTo) query.dueTo = filters.dueTo;
@@ -183,7 +187,7 @@ export function taskQuery(filters: TaskFilters, userId: string, dates: TaskDates
 export function taskListQuery(filters: TaskFilters, changes: Partial<TaskFilters> = {}) {
   const next = { ...filters, ...changes };
   const params = new URLSearchParams();
-  for (const key of ["search", "status", "priority", "assignee", "dueFrom", "dueTo"] as const) {
+  for (const key of ["search", "status", "priority", "assignee", "animalGroupId", "dueFrom", "dueTo"] as const) {
     if (next[key]) params.set(key, next[key]);
   }
   if (next.view !== "all") params.set("view", next.view);

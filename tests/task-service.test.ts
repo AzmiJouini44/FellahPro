@@ -48,6 +48,7 @@ class Repository implements TaskRepository {
     return this.rows.filter((row) => row.farmId === farmId &&
       (!query.search || row.title.toLowerCase().includes(query.search.toLowerCase())) &&
       (!query.status || row.status === query.status) && (!query.priority || row.priority === query.priority) &&
+      (!query.animalGroupId || row.animal_group_id === query.animalGroupId) &&
       (!query.pendingOnly || row.status === "a_faire" || row.status === "en_cours") &&
       (query.assignedTo === undefined || row.assigned_to === query.assignedTo) &&
       (!query.dueFrom || (row.due_on !== null && row.due_on >= query.dueFrom)) &&
@@ -315,7 +316,7 @@ test("missing membership or unexpected roles fail closed for all read/write/opti
     const service = createTaskService(actor, repository, clock);
     for (const result of [await service.list(), await service.get(TASK), await service.create(raw),
       await service.update(TASK, raw), await service.remove(TASK), await service.setStatus(TASK, "terminee"),
-      await service.summary(), await service.options(), await service.members()]) assert.equal(result.ok, false);
+      await service.summary(), await service.options(), await service.members(), await service.forAnimalGroup(GROUP)]) assert.equal(result.ok, false);
     assert.equal(repository.calls.length, 0);
   }
 });
@@ -329,4 +330,22 @@ test("membership/reference races and database/network failures return safe error
   assert.deepEqual(await service.summary(), { ok: false, reason: "failed" });
   repository.find = async () => { throw new Error("private diagnostic"); };
   assert.deepEqual(await service.get(TASK), { ok: false, reason: "failed" });
+});
+
+test("animal-group task links filter within the authorized farm and prefill only verified group references", async () => {
+  const { service, repository } = setup();
+  repository.rows[0].animal_group_id = GROUP;
+  const filtered = await service.list({ animalGroupId: GROUP });
+  assert.ok(filtered.ok);
+  if (filtered.ok) { assert.equal(filtered.data.rows.length, 1); assert.equal(filtered.data.group?.id, GROUP); }
+  assert.equal(repository.calls.at(-1)?.query?.animalGroupId, GROUP);
+  const defaults = await service.forAnimalGroup(GROUP);
+  assert.ok(defaults.ok);
+  if (defaults.ok) { assert.equal(defaults.data.animalGroupId, GROUP); assert.equal(defaults.data.activityId, OTHER_ACTIVITY); assert.equal(defaults.data.cropCycleId, null); }
+  for (const id of [FOREIGN, "../farm-b"]) {
+    assert.equal((await service.list({ animalGroupId: id })).ok, false);
+    assert.equal((await service.forAnimalGroup(id)).ok, false);
+  }
+  assert.ok(repository.calls.every((call) => call.farmId === FARM_A));
+  assert.equal((await setup("accountant", ACCOUNTANT).service.forAnimalGroup(GROUP)).ok, false);
 });

@@ -71,6 +71,7 @@ the data access. The browser never supplies a trusted user identifier.
 - `/{locale}/app/crop-cycles`: crop-cycle management and optional economic activity assignment
 - `/{locale}/app/activities`: economic activity categories, filters, details, and owner management
 - `/{locale}/app/tasks`: task lists, reminders, filters, details, and permitted task management
+- `/{locale}/app/livestock`: animal groups, event history, linked tasks and recorded ledger lines
 
 Supported locale values are `fr` and `ar`. The Arabic layout sets `dir="rtl"`.
 Displayed monetary amounts use Tunisian dinar formatting with three fractional
@@ -102,6 +103,27 @@ completed, and upcoming counts. Read screens refresh while visible every minute
 and on returning to the page. Reminders are displayed inside the application;
 there is no external notification or background delivery service.
 
+Mission 4 adds livestock management without migrations or additional environment
+variables. Existing RLS permits owners to manage animal groups, owners/workers
+to record events, and accountants to read. Create an economic activity before
+creating a group; inactive and non-livestock categories remain valid references
+under the existing schema. Events are appended to history with no edit/delete
+controls. Group deletion is blocked by any linked events, tasks, transactions or
+inventory movements; owners can deactivate a group instead.
+
+Counts come from `v_animal_group_counts`, including inactive groups. Births and
+purchases add animals; sales and deaths subtract them. Transfers, care and other
+events have no count effect. Negative balances are displayed with an alert.
+Event dates cannot be future in Tunisia in the application; the existing view
+includes all database events, including any future-dated legacy imports.
+The financial section reads generated ledger-line amounts explicitly linked to
+the group, including settled transactions. It does not record event prices or
+create ledger transactions automatically. No amounts are inferred.
+
+Groups link to their full task list and can prefill a new task with a verified
+same-farm group/activity. Task details link back to the animal group. Mobile
+navigation retains six destinations; sign-out is in the mobile header.
+
 ## Validation
 
 ```text
@@ -123,7 +145,10 @@ PostgreSQL/Supabase environment and are not currently run by that workflow.
 Run `tasks_crud_rls.sql` as well. It tests task CRUD, all status/priority values,
 assignee membership, cross-farm and composite-reference rejection, the role
 matrix, derived reminder queries, and unassignment when a member leaves.
-There are eight SQL suites in total; run them all against the same disposable
+`livestock_crud_rls.sql` additionally verifies group/event permissions, counts,
+history preservation, the four independent group deletion dependencies,
+cross-farm references, task links and recorded financial amounts.
+There are nine SQL suites in total; run them all against the same disposable
 database after applying the four migrations in filename order.
 The area concurrency suite uses two independent `dblink` sessions and commits
 fixtures to exercise real lock waits for both INSERT and UPDATE orderings

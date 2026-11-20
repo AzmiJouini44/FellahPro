@@ -272,6 +272,74 @@ tests; SQL tests independently exercise the existing policies and constraints
 with real authenticated/anonymous PostgreSQL roles. Neither is a substitute
 for hosted Supabase authentication or browser end-to-end validation.
 
+## Livestock management
+
+Mission 4 reuses `animal_groups`, `animal_events`, their farm indexes, composite
+foreign keys, the group audit trigger and `v_animal_group_counts`. There are no
+new columns, migrations or policy changes. Species/type is existing free text,
+not an invented breed or species taxonomy. Groups require a same-farm economic
+activity, including inactive categories and any existing activity kind.
+Application group names are 2–120 characters, species labels 2–80 characters,
+and opening counts are nonnegative PostgreSQL integers. Existing rows are not
+rewritten to fit these application limits.
+
+Group mutation is owner-only under existing RLS. Workers can record events but
+cannot manage structural groups; accountants read. Every loader, reference
+lookup, list, summary and mutation uses the authenticated SSR client and the
+farm selected through actual membership. Record IDs are untrusted selectors
+combined with this farm. Farm, user, role, audit and derived-count fields are
+excluded from writes. Membership and composite foreign keys remain authoritative
+if authorization or references change after a form is rendered.
+
+The supported event kinds are exactly `naissance`, `achat`, `vente`, `deces`,
+`transfert`, `soin`, `autre`. The application exposes INSERT-only event history:
+no existing event is overwritten or deleted through this module. Notes are at
+most 2,000 characters; quantities are integers within the PostgreSQL range,
+positive for population-changing types and optionally zero for neutral types.
+Arabic/Persian digits are normalized. Event dates are real calendar dates no
+later than today in `Africa/Tunis`; these are historical records, not scheduled
+interventions. Inactive groups may still receive historical entries. Existing
+direct database UPDATE/DELETE permissions are preserved; this is not a new
+tamper-proof audit ledger. Care events record facts/notes only, with no medical
+recommendations or prescriptions.
+
+All displayed counts use the existing security-invoker SQL view: opening count
+plus births/purchases minus sales/deaths. The application never independently
+replays event quantities to calculate a second balance. Transfers have no
+destination in the schema and remain neutral, as do care and other events.
+Opening count is an explicitly editable starting baseline, with a form warning
+that changing it changes the calculated balance without modifying history.
+The view includes every recorded event, even future-dated legacy data; it is
+a recorded balance, not an as-of-date census. Negative values remain visible
+and generate data-quality alerts. SQL bigint counts are kept exact; unsafe
+already-rounded numeric JSON or missing view rows produce an error, not zero.
+Dashboard totals sum those balances across all current-farm groups, including
+inactive history, and group counts are broken down by stored species labels.
+At most eight species labels and five recent events are previewed on the
+dashboard; full group/history lists are available. Independent paged reads are
+an operational overview, not a transactional reporting snapshot.
+
+Group deletion requires confirmation and is blocked independently by events,
+tasks, transactions or inventory movements. No linked data is cascaded or
+detached by the module; deactivation preserves history. Reassigning the group's
+activity can also be blocked by dependent composite keys. Group/event lists use
+24-row pages with stable UUID tie-breakers. Event history supports kind/date
+filters, and all events remain accessible through pagination.
+
+Animal events have no amount or transaction link. The financial section shows
+only actual generated `transaction_lines.amount` values from transactions
+explicitly linked to the authorized group. It paginates lines without recomputing
+prices, costs, payments or profit. It does not label every expense as a purchase
+or every revenue as an animal sale. `v_debts` cannot supply this history because
+it intentionally excludes settled transactions. There is no automatic ledger
+write or event-specific purchase/sale price capture in this mission.
+
+Task list filtering by `animalGroupId` first verifies the group in the current
+farm. Group-to-task creation derives the initial activity/group from that same
+verified record; the ordinary task service validates the final submitted
+references again. Task pages link back to the group. These additions preserve
+existing assignee, role, date and cross-farm protections.
+
 ## Deliberately deferred
 
 - Farm switching and dated agricultural field operations remain deferred.

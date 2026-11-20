@@ -18,6 +18,7 @@ export default async function TasksPage({ params, searchParams }: PageProps<"/[l
   const { workspace, result, members } = await listCurrentFarmTasks(locale, {
     search: query.search, status: query.status, priority: query.priority, assignee: query.assignee,
     dueFrom: query.dueFrom, dueTo: query.dueTo, view: query.view, page: query.page,
+    animalGroupId: query.animalGroupId,
   });
   if (!workspace.farm) redirect(`/${locale}/onboarding`);
   const text = getDictionary(locale).tasks;
@@ -25,7 +26,7 @@ export default async function TasksPage({ params, searchParams }: PageProps<"/[l
   const filters = result.ok ? result.data.filters : null;
   const view = filters?.view ?? "all";
   const team = members.ok ? members.data : [];
-  const hasFilters = filters && Boolean(filters.search || filters.status || filters.priority || filters.assignee || filters.dueFrom || filters.dueTo || filters.view !== "all");
+  const hasFilters = filters && Boolean(filters.search || filters.status || filters.priority || filters.assignee || filters.animalGroupId || filters.dueFrom || filters.dueTo || filters.view !== "all");
   const success = typeof query.success === "string" && Object.hasOwn(text.success, query.success)
     ? text.success[query.success as keyof typeof text.success] : null;
   const value = (key: "search" | "status" | "priority" | "assignee" | "dueFrom" | "dueTo") =>
@@ -42,6 +43,10 @@ export default async function TasksPage({ params, searchParams }: PageProps<"/[l
     {success ? <p className="form-message success" role="status">{success}</p> : null}
     {query.error === "forbidden" ? <p className="form-message error" role="alert">{text.errors.forbidden}</p> : null}
     {!editable ? <p className="read-only-notice">{text.readOnly}</p> : null}
+    {result.ok && result.data.group ? <p className="record-activity-link">
+      {getDictionary(locale).livestock.tasks.filtered}: <Link href={`/${locale}/app/livestock/${result.data.group.id}`}>{result.data.group.name}</Link>
+      {" · "}<Link href={base + taskListQuery(result.data.filters, { animalGroupId: "", page: 1 })}>{getDictionary(locale).livestock.tasks.clear}</Link>
+    </p> : null}
     <nav className="task-views" aria-label={text.title}>
       {taskViews.map((item) => <Link key={item} aria-current={view === item ? "page" : undefined}
         href={base + (filters ? taskListQuery(filters, {
@@ -50,6 +55,7 @@ export default async function TasksPage({ params, searchParams }: PageProps<"/[l
     </nav>
     <form key={JSON.stringify(filters)} method="get" className="task-filters">
       <input type="hidden" name="view" value={view} />
+      {filters?.animalGroupId ? <input type="hidden" name="animalGroupId" value={filters.animalGroupId} /> : null}
       <div className="form-field task-search"><label htmlFor="task-search">{text.filters.search}</label>
         <input id="task-search" name="search" type="search" maxLength={120} defaultValue={value("search")} placeholder={text.filters.searchPlaceholder} />
       </div>

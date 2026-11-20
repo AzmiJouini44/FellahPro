@@ -75,15 +75,18 @@ test("overdue/upcoming indicators exclude completed and cancelled tasks and hand
 test("task filters validate UUIDs, dates, pagination and canonical view values", () => {
   for (const changes of [
     { view: ["mine"] }, { status: "overdue" }, { priority: "high" }, { assignee: "intruder" },
+    { animalGroupId: "../private" }, { animalGroupId: [id] },
     { dueFrom: "2026-02-30" }, { dueFrom: "2026-12-01", dueTo: "2026-01-01" },
     { page: "0" }, { page: "1e2" }, { page: "1000000" }, { search: "x".repeat(121) },
   ]) assert.equal(validateTaskFilters(changes).success, false);
-  const validated = validateTaskFilters({ view: "mine", assignee: "unassigned", status: "en_cours", priority: "haute", dueFrom: "٢٠٢٦-١١-٢٠", page: "2" });
+  const validated = validateTaskFilters({ view: "mine", assignee: "unassigned", animalGroupId: id, status: "en_cours", priority: "haute", dueFrom: "٢٠٢٦-١١-٢٠", page: "2" });
   assert.ok(validated.success);
   if (validated.success) {
     const query = taskQuery(validated.data, id, getTaskDates(new Date("2026-11-20T12:00:00Z")));
     assert.equal(query.assignedTo, id, "mine uses the server identity, not the submitted assignee");
     assert.equal(query.dueFrom, "2026-11-20");
+    assert.equal(query.animalGroupId, id);
+    assert.match(taskListQuery(validated.data, { page: 3 }), /animalGroupId=/);
     assert.match(taskListQuery(validated.data, { view: "all", page: 1 }), /priority=haute/);
   }
 });

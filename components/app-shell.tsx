@@ -60,6 +60,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">☑</span>
             {dictionary.nav.tasks}
           </AppNavLink>
+          <AppNavLink className="app-nav-link" href={`/${locale}/app/livestock`} match="prefix">
+            <span aria-hidden="true">♧</span>
+            {dictionary.nav.livestock}
+          </AppNavLink>
         </nav>
         <div className="sidebar-footer">
           <div className="account-summary">
@@ -92,13 +96,16 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             </span>
             <span>FellahPro</span>
           </Link>
-          <Link
-            className="language-link"
-            href={`/${alternateLocale}/app`}
-            aria-label={dictionary.nav.languageLabel}
-          >
-            {dictionary.nav.language}
-          </Link>
+          <div className="mobile-app-controls">
+            <Link className="language-link" href={`/${alternateLocale}/app`} aria-label={dictionary.nav.languageLabel}>
+              {dictionary.nav.language}
+            </Link>
+            <form action={logout}><input name="locale" type="hidden" value={locale} />
+              <button className="mobile-logout" type="submit" aria-label={dictionary.auth.logout}>
+                <span aria-hidden="true">↪</span> {dictionary.appShell.mobileLogout}
+              </button>
+            </form>
+          </div>
         </header>
         <main className="app-content">{children}</main>
         <nav className="mobile-bottom-nav" aria-label={dictionary.nav.mainLabel}>
@@ -122,13 +129,10 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span aria-hidden="true">☑</span>
             {dictionary.appShell.mobileTasks}
           </AppNavLink>
-          <form action={logout}>
-            <input name="locale" type="hidden" value={locale} />
-            <button type="submit">
-              <span aria-hidden="true">↪</span>
-              {dictionary.appShell.mobileLogout}
-            </button>
-          </form>
+          <AppNavLink href={`/${locale}/app/livestock`} match="prefix">
+            <span aria-hidden="true">♧</span>
+            {dictionary.appShell.mobileLivestock}
+          </AppNavLink>
         </nav>
       </div>
     </div>

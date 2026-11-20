@@ -41,6 +41,7 @@ function createRepository(client: SupabaseClient): TaskRepository {
     if (filters.search) request = request.ilike("title", "%" + escapeActivitySearch(filters.search) + "%");
     if (filters.status) request = request.eq("status", filters.status);
     if (filters.priority) request = request.eq("priority", filters.priority);
+    if (filters.animalGroupId) request = request.eq("animal_group_id", filters.animalGroupId);
     if (filters.pendingOnly) request = request.in("status", ["a_faire", "en_cours"]);
     if (filters.assignedTo === null) request = request.is("assigned_to", null);
     else if (filters.assignedTo !== undefined) request = request.eq("assigned_to", filters.assignedTo);
