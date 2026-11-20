@@ -25,7 +25,7 @@ export type TaskActor = { farmId: string; userId: string; role: string | null } 
 export type TaskFailure = "forbidden" | "notFound" | "invalid" | "invalidFilters" | "related" | "failed";
 export type TaskResult<T> = { ok: true; data: T } | { ok: false; reason: TaskFailure; errors?: TaskErrors };
 export type TaskSummary = { pending: number; dueToday: number; overdue: number; completed: number; upcoming: number; dates: TaskDates };
-export type TaskList = { rows: TaskRecord[]; count: number; filters: TaskFilters; dates: TaskDates };
+export type TaskList = { rows: TaskRecord[]; count: number; filters: TaskFilters; dates: TaskDates; group: TaskGroup | null };
 
 export interface TaskRepository {
   list(farmId: string, query: TaskQuery): Promise<DatabaseResult<{ rows: TaskRecord[]; count: number }>>;
@@ -102,6 +102,13 @@ export function createTaskService(actor: TaskActor, repository: TaskRepository, 
       const filters = validated.data;
       if (filters.view === "mine") filters.assignee = actor!.userId;
       if (filters.view === "completed") filters.status = "terminee";
+      let group: TaskGroup | null = null;
+      if (filters.animalGroupId) {
+        const response = await safe(() => repository.group(actor!.farmId, filters.animalGroupId));
+        if (response.error) return { ok: false, reason: "failed" };
+        if (!response.data) return { ok: false, reason: "invalidFilters" };
+        group = response.data;
+      }
       if (filters.assignee && filters.assignee !== "unassigned" && filters.view !== "mine") {
         const member = await safe(() => repository.member(actor!.farmId, filters.assignee));
         if (member.error) return { ok: false, reason: "failed" };
@@ -109,7 +116,15 @@ export function createTaskService(actor: TaskActor, repository: TaskRepository, 
       }
       const dates = getTaskDates(now());
       const response = result(await safe(() => repository.list(actor!.farmId, taskQuery(filters, actor!.userId, dates))));
-      return response.ok ? { ok: true, data: { ...response.data, filters, dates } } : response;
+      return response.ok ? { ok: true, data: { ...response.data, filters, dates, group } } : response;
+    },
+    async forAnimalGroup(id: unknown): Promise<TaskResult<TaskInput>> {
+      if (!editable) return denied;
+      if (!isUuid(id)) return { ok: false, reason: "notFound" };
+      const group = result(await safe(() => repository.group(actor!.farmId, id)));
+      if (!group.ok) return group;
+      return { ok: true, data: { title: "", description: null, dueOn: null, status: "a_faire", priority: "normale",
+        assignedTo: null, activityId: group.data.activity_id, animalGroupId: group.data.id, cropCycleId: null } };
     },
     async get(id: string): Promise<TaskResult<TaskDetail>> {
       if (!readable) return denied;

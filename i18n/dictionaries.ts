@@ -1,9 +1,11 @@
 import type { Locale } from "@/i18n/config";
 import { activityDictionaries } from "@/i18n/activity-dictionaries";
 import { taskDictionaries } from "@/i18n/task-dictionaries";
+import { livestockDictionaries } from "@/i18n/livestock-dictionaries";
 
 const dictionaries = {
   fr: {
+    livestock: livestockDictionaries.fr,
     tasks: taskDictionaries.fr,
     activities: activityDictionaries.fr,
     brandTagline: "La gestion agricole, simplement.",
@@ -18,6 +20,7 @@ const dictionaries = {
       cropCycles: "Cycles culturaux",
       activities: "Activités",
       tasks: "Tâches",
+      livestock: "Élevage",
       language: "العربية",
       languageLabel: "Passer en arabe",
       mainLabel: "Navigation de l’application",
@@ -91,6 +94,7 @@ const dictionaries = {
       mobileCycles: "Cultures",
       mobileActivities: "Activités",
       mobileTasks: "Tâches",
+      mobileLivestock: "Élevage",
       mobileLogout: "Sortir",
     },
     dashboard: {
@@ -346,6 +350,7 @@ const dictionaries = {
     },
   },
   ar: {
+    livestock: livestockDictionaries.ar,
     tasks: taskDictionaries.ar,
     activities: activityDictionaries.ar,
     brandTagline: "إدارة فلاحية بكل بساطة.",
@@ -360,6 +365,7 @@ const dictionaries = {
       cropCycles: "الدورات الزراعية",
       activities: "الأنشطة",
       tasks: "المهام",
+      livestock: "الماشية",
       language: "Français",
       languageLabel: "التبديل إلى الفرنسية",
       mainLabel: "التنقل داخل التطبيق",
@@ -431,6 +437,7 @@ const dictionaries = {
       mobileCycles: "الزراعات",
       mobileActivities: "الأنشطة",
       mobileTasks: "المهام",
+      mobileLivestock: "الماشية",
       mobileLogout: "خروج",
     },
     dashboard: {

@@ -50,7 +50,7 @@ export default async function TaskDetailsPage({ params, searchParams }: PageProp
           <div><dt>{text.form.assignedTo}</dt><dd dir="auto">{task.member ? taskMemberLabel(locale, task.member) : task.assigned_to ? text.unavailable : text.unassigned}</dd></div>
           <div><dt>{text.form.activityId}</dt><dd>{task.activity ? <Link href={`/${locale}/app/activities/${task.activity.id}`}>{task.activity.name}{task.activity.is_active ? "" : ` (${text.form.inactive})`}</Link> : task.activity_id ? text.unavailable : text.none}</dd></div>
           <div><dt>{text.form.cropCycleId}</dt><dd>{task.cycle ? <Link href={`/${locale}/app/crop-cycles/${task.cycle.id}`}>{task.cycle.crop_name} — {formatUtcDate(task.cycle.started_on, locale)}</Link> : task.crop_cycle_id ? text.unavailable : text.none}</dd></div>
-          <div><dt>{text.form.animalGroupId}</dt><dd dir="auto">{task.group?.name ?? (task.animal_group_id ? text.unavailable : text.none)}</dd></div>
+          <div><dt>{text.form.animalGroupId}</dt><dd dir="auto">{task.group ? <Link href={`/${locale}/app/livestock/${task.group.id}`}>{task.group.name}</Link> : task.animal_group_id ? text.unavailable : text.none}</dd></div>
         </dl>
       </section>
     </div>
