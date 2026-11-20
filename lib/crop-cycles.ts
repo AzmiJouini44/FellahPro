@@ -10,6 +10,8 @@ import {
 import { isUuid } from "@/lib/plot-validation";
 import { getCurrentWorkspace } from "@/lib/workspace";
 import { createClient } from "@/utils/supabase/server";
+import { getActivityOptions } from "@/lib/activities";
+import type { ActivityOption } from "@/lib/activity-service";
 
 export type CropCyclePlot = {
   id: string;
@@ -20,6 +22,7 @@ export type CropCyclePlot = {
 
 type CropCycleRow = {
   id: string;
+  activity_id: string | null;
   plot_id: string;
   crop_name: string;
   started_on: string;
@@ -83,7 +86,7 @@ export async function listCurrentFarmCropCycles(
   let cyclesQuery = supabase
     .from("crop_cycles")
     .select(
-      "id, plot_id, crop_name, started_on, expected_harvest_on, actual_harvest_on, cultivated_area_hectares, status, notes, created_at, updated_at",
+      "id, activity_id, plot_id, crop_name, started_on, expected_harvest_on, actual_harvest_on, cultivated_area_hectares, status, notes, created_at, updated_at",
     )
     .eq("farm_id", workspace.farm.id)
     .order("started_on", { ascending: false });
@@ -119,17 +122,18 @@ export async function getCurrentFarmCropCycle(locale: Locale, cycleId: string) {
     return {
       workspace,
       cycle: null as CropCycleRecord | null,
+      activities: [] as ActivityOption[],
       plots: [] as CropCyclePlot[],
       error: null as PostgrestError | null,
     };
   }
 
   const supabase = await createClient();
-  const [cycleResult, plotsResult] = await Promise.all([
+  const [cycleResult, plotsResult, activitiesResult] = await Promise.all([
     supabase
       .from("crop_cycles")
       .select(
-        "id, plot_id, crop_name, started_on, expected_harvest_on, actual_harvest_on, cultivated_area_hectares, status, notes, created_at, updated_at",
+        "id, activity_id, plot_id, crop_name, started_on, expected_harvest_on, actual_harvest_on, cultivated_area_hectares, status, notes, created_at, updated_at",
       )
       .eq("farm_id", workspace.farm.id)
       .eq("id", cycleId)
@@ -140,21 +144,23 @@ export async function getCurrentFarmCropCycle(locale: Locale, cycleId: string) {
       .eq("farm_id", workspace.farm.id)
       .order("name")
       .returns<CropCyclePlot[]>(),
+    getActivityOptions(supabase, workspace.farm.id),
   ]);
 
   const plots = plotsResult.data ?? [];
   return {
     workspace,
     cycle: cycleResult.data ? attachPlots([cycleResult.data], plots)[0] : null,
+    activities: activitiesResult.data ?? [],
     plots,
-    error: cycleResult.error ?? plotsResult.error,
+    error: cycleResult.error ?? plotsResult.error ?? activitiesResult.error,
   };
 }
 
 export async function listCurrentFarmCropCyclePlots(locale: Locale) {
   const workspace = await getCurrentWorkspace(locale);
   if (!workspace.farm) {
-    return { workspace, plots: [] as CropCyclePlot[], error: null as PostgrestError | null };
+    return { workspace, plots: [] as CropCyclePlot[], activities: [] as ActivityOption[], error: null as PostgrestError | null };
   }
 
   const supabase = await createClient();
@@ -165,7 +171,8 @@ export async function listCurrentFarmCropCyclePlots(locale: Locale) {
     .order("name")
     .returns<CropCyclePlot[]>();
 
-  return { workspace, plots: data ?? [], error };
+  const activities = await getActivityOptions(supabase, workspace.farm.id);
+  return { workspace, plots: data ?? [], activities: activities.data ?? [], error: error ?? activities.error };
 }
 
 export async function getCropCycleSummary(farmId: string) {

@@ -5,7 +5,7 @@ import { PlotForm } from "@/components/plot-form";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { canEditPlots } from "@/lib/plot-validation";
-import { getCurrentWorkspace } from "@/lib/workspace";
+import { listCurrentFarmActivityOptions } from "@/lib/activities";
 
 export const instant = false;
 
@@ -18,7 +18,7 @@ export default async function NewPlotPage({
     notFound();
   }
 
-  const workspace = await getCurrentWorkspace(locale);
+  const { workspace, data: activities, error } = await listCurrentFarmActivityOptions(locale);
 
   if (!workspace.farm) {
     redirect(`/${locale}/onboarding`);
@@ -29,6 +29,8 @@ export default async function NewPlotPage({
   }
 
   const dictionary = getDictionary(locale).plots.newPlot;
+
+  if (error) return <section className="plot-state-card is-error"><h1>{getDictionary(locale).activities.errors.loadFailed}</h1></section>;
 
   return (
     <div className="plot-editor-page">
@@ -45,6 +47,7 @@ export default async function NewPlotPage({
           cancelHref={`/${locale}/app/plots`}
           locale={locale}
           mode="create"
+          activities={activities}
         />
       </div>
     </div>

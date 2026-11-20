@@ -1,15 +1,20 @@
+import { validateActivityAssignment } from "./activity-validation";
+export { isUuid } from "./validation";
+
 export type PlotRole = "owner" | "worker" | "accountant";
 
 export type PlotInput = {
   name: string;
   areaHectares: number;
   notes: string | null;
+  activityId?: string | null;
 };
 
 export type PlotValidationErrors = {
   name?: "invalid";
   areaHectares?: "invalid";
   notes?: "too_long";
+  activityId?: "invalid";
 };
 
 type PlotValidationResult =
@@ -34,11 +39,14 @@ export function validatePlotInput(input: {
   name: unknown;
   areaHectares: unknown;
   notes: unknown;
+  activityId?: unknown;
 }): PlotValidationResult {
   const name = readString(input.name).trim().replace(/\s+/g, " ");
   const areaText = normalizeDigits(readString(input.areaHectares).trim());
   const notesText = readString(input.notes).trim();
   const errors: PlotValidationErrors = {};
+  const assignment = validateActivityAssignment(input.activityId);
+  if (!assignment.success) errors.activityId = "invalid";
 
   if (name.length < 2 || name.length > 120) {
     errors.name = "invalid";
@@ -72,6 +80,7 @@ export function validatePlotInput(input: {
       name,
       areaHectares,
       notes: notesText.length > 0 ? notesText : null,
+      ...(assignment.success && assignment.activityId !== undefined ? { activityId: assignment.activityId } : {}),
     },
   };
 }
@@ -82,10 +91,4 @@ export function canEditPlots(role: string | null): role is "owner" | "worker" {
 
 export function canDeletePlots(role: string | null): role is "owner" {
   return role === "owner";
-}
-
-export function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
 }

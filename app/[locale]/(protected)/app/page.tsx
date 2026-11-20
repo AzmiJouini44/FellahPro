@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActivitySummary } from "@/components/activity-summary";
 import { notFound, redirect } from "next/navigation";
 
 import { isLocale } from "@/i18n/config";
@@ -91,6 +92,8 @@ export default async function DashboardPage({
           </div>
         </section>
       ) : null}
+
+      <ActivitySummary locale={locale} />
 
       <section className="readiness-grid">
         <article className="readiness-card is-ready">

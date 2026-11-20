@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
+import { ActivitySelect } from "@/components/activity-select";
+import type { ActivityOption } from "@/lib/activity-service";
 
 import type { PlotActionState } from "@/app/[locale]/(protected)/app/plots/actions";
 import type { Locale } from "@/i18n/config";
@@ -14,10 +16,12 @@ type PlotFormProps = {
   ) => Promise<PlotActionState>;
   locale: Locale;
   mode: "create" | "edit";
+  activities: ActivityOption[];
   initialValues?: {
     name: string;
     areaHectares: number;
     notes: string;
+    activityId: string | null;
   };
   cancelHref: string;
 };
@@ -28,6 +32,7 @@ export function PlotForm({
   action,
   locale,
   mode,
+  activities,
   initialValues,
   cancelHref,
 }: PlotFormProps) {
@@ -82,6 +87,9 @@ export function PlotForm({
           </span>
         ) : null}
       </div>
+
+      <ActivitySelect locale={locale} activities={activities} mode={mode}
+        initialActivityId={initialValues?.activityId} error={state.errors?.activityId} />
 
       <div className="form-field">
         <label htmlFor="plot-notes">

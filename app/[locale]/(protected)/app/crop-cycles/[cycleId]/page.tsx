@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { CropCycleMissing } from "@/components/crop-cycle-missing";
 import { CropCycleStatusBadge } from "@/components/crop-cycle-status";
 import { DeleteCropCycleControl } from "@/components/delete-crop-cycle-control";
+import { RecordActivity } from "@/components/record-activity";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { canDeleteCropCycles, canEditCropCycles } from "@/lib/crop-cycle-validation";
@@ -20,7 +21,7 @@ export default async function CropCycleDetailsPage({
   const query = await searchParams;
   if (!isLocale(locale)) notFound();
 
-  const { workspace, cycle, error } = await getCurrentFarmCropCycle(locale, cycleId);
+  const { workspace, cycle, activities, error } = await getCurrentFarmCropCycle(locale, cycleId);
   if (!workspace.farm) redirect(`/${locale}/onboarding`);
   const dictionary = getDictionary(locale).cropCycles;
   if (error) return <section className="plot-state-card is-error"><h1>{dictionary.errors.loadFailed}</h1></section>;
@@ -59,6 +60,7 @@ export default async function CropCycleDetailsPage({
         <h2>{dictionary.details.notes}</h2>
         <p>{cycle.notes?.trim() || dictionary.details.noNotes}</p>
       </section>
+      <RecordActivity locale={locale} activityId={cycle.activity_id} activities={activities} />
       <footer className="record-meta">
         <span>{dictionary.details.createdAt}: {formatDate(cycle.created_at, locale)}</span>
         <span>{dictionary.details.updatedAt}: {formatDate(cycle.updated_at, locale)}</span>

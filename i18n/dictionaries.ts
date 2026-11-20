@@ -1,7 +1,9 @@
 import type { Locale } from "@/i18n/config";
+import { activityDictionaries } from "@/i18n/activity-dictionaries";
 
 const dictionaries = {
   fr: {
+    activities: activityDictionaries.fr,
     brandTagline: "La gestion agricole, simplement.",
     nav: {
       home: "Accueil",
@@ -12,6 +14,7 @@ const dictionaries = {
       farm: "Ma ferme",
       plots: "Parcelles",
       cropCycles: "Cycles culturaux",
+      activities: "Activités",
       language: "العربية",
       languageLabel: "Passer en arabe",
       mainLabel: "Navigation de l’application",
@@ -83,6 +86,7 @@ const dictionaries = {
       mobileFarm: "Ferme",
       mobilePlots: "Parcelles",
       mobileCycles: "Cultures",
+      mobileActivities: "Activités",
     },
     dashboard: {
       eyebrow: "Tableau de bord",
@@ -337,6 +341,7 @@ const dictionaries = {
     },
   },
   ar: {
+    activities: activityDictionaries.ar,
     brandTagline: "إدارة فلاحية بكل بساطة.",
     nav: {
       home: "الرئيسية",
@@ -347,6 +352,7 @@ const dictionaries = {
       farm: "ضيعتي",
       plots: "القطع",
       cropCycles: "الدورات الزراعية",
+      activities: "الأنشطة",
       language: "Français",
       languageLabel: "التبديل إلى الفرنسية",
       mainLabel: "التنقل داخل التطبيق",
@@ -416,6 +422,7 @@ const dictionaries = {
       mobileFarm: "الضيعة",
       mobilePlots: "القطع",
       mobileCycles: "الزراعات",
+      mobileActivities: "الأنشطة",
     },
     dashboard: {
       eyebrow: "لوحة القيادة",

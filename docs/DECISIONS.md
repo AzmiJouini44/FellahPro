@@ -177,10 +177,54 @@ unchanged: all members read, owners and workers create or update, and only
 owners delete. Existing task, transaction, and inventory foreign keys remain
 restrictive, so linked operational records block deletion instead of cascading.
 
+## Economic activity management
+
+Mission 3C manages the existing economic categories in `public.activities`:
+name, kind (`culture`, `elevage`, `commerce`, `autre`), and active state. It adds
+no migration and does not turn categories into dated agricultural operations.
+Creation-date filters use the existing audit timestamp and explicitly use UTC.
+The application validates names between 2 and 120 characters; historical
+database values are not truncated or rewritten.
+
+All category reads use the authenticated SSR client and the current member
+workspace. Only owners create, edit, activate, deactivate, or delete categories.
+Workers and accountants can read them, including inactive history. The existing
+owner/worker permissions for plot and crop-cycle assignment remain unchanged.
+Server Actions derive the farm and role from membership, accept only editable
+fields, and combine record UUIDs with the authorized farm ID for every mutation.
+RLS remains authoritative if membership changes between rendering and writing.
+
+Plots and cycles have optional activity selectors. A new cycle can default to
+the selected plot's activity, use a different same-farm category, or explicitly
+have no category. On UPDATE, a missing assignment field omits `activity_id`
+from the SQL payload, preserving even an assignment changed concurrently after
+the form was loaded. An unchanged edit selector does not submit that field;
+an explicitly empty selection unassigns it. Plot reassignment never rewrites
+existing cycles. Inactive categories remain visible and assignable, and no new
+restriction is imposed on category kind.
+
+Deletion requires UI confirmation and remains subject to all six existing
+activity foreign keys: plots, cycles, animal groups, transactions, inventory
+movements, and tasks. The application reports dependency failures and offers
+deactivation as the history-preserving alternative. It never cascades, detaches,
+or reassigns dependent records automatically. Cycle reassignment/unassignment
+can similarly be rejected by dependent composite foreign keys.
+
+Activities lists use stable creation-time/UUID ordering and 24-row pages.
+Related plot/cycle sections show at most 50 records with exact totals. Activity
+options are fetched in pages, including inactive records. Dashboard statistics
+use exact database counts rather than a potentially API-truncated row list.
+These independent counts are a current overview, not a transactional reporting
+snapshot. Financial reporting continues to use the existing SQL views.
+
+Validation and authorization orchestration are tested through the same service
+used by the SSR actions, with a repository substitute for unit tests. Database
+security is tested separately under authenticated/anonymous roles against real
+PostgreSQL; unit substitutes are not treated as hosted Supabase verification.
+
 ## Deliberately deferred
 
-- The Mission 2 dashboard is an authenticated placeholder; operational feature
-  pages and farm switching remain deferred.
+- Farm switching and dated agricultural field operations remain deferred.
 - No marketplace, subscription, or AI tables are created.
 - No database changes are applied automatically; the migration must be reviewed
   and applied by the project owner.

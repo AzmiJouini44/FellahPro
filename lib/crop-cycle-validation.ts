@@ -1,4 +1,5 @@
 import { isUuid } from "@/lib/plot-validation";
+import { validateActivityAssignment } from "./activity-validation";
 
 export const cropCycleStatuses = [
   "planned",
@@ -18,11 +19,13 @@ export type CropCycleInput = {
   cultivatedAreaHectares: number;
   status: CropCycleStatus;
   notes: string | null;
+  activityId?: string | null;
 };
 
 export type CropCycleValidationErrors = Partial<
   Record<
     | "plotId"
+    | "activityId"
     | "cropName"
     | "plantedOn"
     | "expectedHarvestOn"
@@ -77,6 +80,7 @@ export function validateCropCycleInput(input: {
   cultivatedAreaHectares: unknown;
   status: unknown;
   notes: unknown;
+  activityId?: unknown;
 }): CropCycleValidationResult {
   const plotId = readString(input.plotId).trim();
   const cropName = readString(input.cropName).trim().replace(/\s+/g, " ");
@@ -93,6 +97,8 @@ export function validateCropCycleInput(input: {
   const statusText = readString(input.status).trim();
   const notesText = readString(input.notes).trim();
   const errors: CropCycleValidationErrors = {};
+  const assignment = validateActivityAssignment(input.activityId);
+  if (!assignment.success) errors.activityId = "invalid";
 
   if (!isUuid(plotId)) errors.plotId = "invalid";
   if (cropName.length < 2 || cropName.length > 120) errors.cropName = "invalid";
@@ -150,6 +156,7 @@ export function validateCropCycleInput(input: {
       cultivatedAreaHectares: area,
       status: statusText,
       notes: notesText || null,
+      ...(assignment.success && assignment.activityId !== undefined ? { activityId: assignment.activityId } : {}),
     },
   };
 }

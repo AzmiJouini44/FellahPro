@@ -615,7 +615,7 @@ h1 {
   bottom: 12px;
   left: 12px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   border-radius: 18px;
@@ -1639,4 +1639,50 @@ h1 {
     scroll-behavior: auto !important;
     transition: none !important;
   }
+}
+
+/* Economic activity categories reuse the operational module surfaces. */
+.activity-breadcrumbs ol { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: .85rem; }
+.activity-breadcrumbs li { overflow-wrap: anywhere; }
+.activity-breadcrumbs li + li::before { content: "/"; margin-inline-end: 8px; }
+.activity-breadcrumbs a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.activities-page, .activity-form { display: grid; gap: 24px; }
+.activity-grid, .activity-related-grid { display: grid; gap: 16px; }
+.activity-card { display: grid; gap: 16px; border: 1px solid var(--border); border-radius: 18px; padding: 22px; background: var(--surface); color: var(--text); }
+.activity-card:hover { border-color: var(--primary); }
+.activity-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.activity-card h2 { margin: 0; font-size: 1.15rem; overflow-wrap: anywhere; }
+.activity-card small { color: var(--muted); }
+.activity-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.activity-status, .activity-kind { width: fit-content; display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: .78rem; font-weight: 750; }
+.activity-status { flex-shrink: 0; }
+.activity-status.is-active { color: #245337; background: #e1f1e5; }
+.activity-status.is-inactive { color: #5e635f; background: #eceeeb; }
+.activity-kind { color: var(--primary); background: var(--surface-soft); }
+.activity-actions { display: flex; flex-direction: column; align-items: stretch; gap: 10px; }
+.activity-status-control { display: grid; gap: 8px; }
+.activity-actions .delete-confirmation { max-width: 440px; }
+.activity-filters { display: grid; gap: 16px; border: 1px solid var(--border); border-radius: 18px; padding: 20px; background: var(--surface); }
+.activity-date-hint { margin: 0; }
+.activity-pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; }
+.activity-related-list { display: grid; gap: 12px; padding-inline-start: 22px; }
+.activity-related-list a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.activity-summary-grid { display: grid; gap: 12px; }
+.activity-summary-grid article { display: grid; gap: 12px; border: 1px solid var(--border); border-radius: 15px; padding: 20px; background: var(--surface); }
+.activity-summary-grid span, .activity-kind-counts dt { color: var(--muted); font-size: .85rem; }
+.activity-summary-grid strong { font-size: 1.8rem; }
+.activity-kind-counts { display: flex; flex-wrap: wrap; gap: 16px 28px; margin: 20px 0 0; }
+.activity-kind-counts div { display: flex; gap: 10px; }
+.activity-kind-counts dd { margin: 0; font-weight: 750; }
+.record-activity-link { border: 1px solid var(--border); border-radius: 15px; padding: 18px; background: var(--surface); }
+.record-activity-link a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+@media (min-width: 640px) {
+  .activity-grid, .activity-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .activity-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+  .activity-search, .activity-date-hint, .activity-filter-actions { grid-column: 1 / -1; }
+  .activity-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: 860px) {
+  .activity-actions { min-width: 160px; }
+  .activity-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

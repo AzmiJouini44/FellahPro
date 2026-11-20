@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 
 import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { isCurrentFarmActivity } from "@/lib/activities";
+import { activityAssignmentPatch, newCycleActivity } from "@/lib/activity-validation";
 import {
   canDeleteCropCycles,
   canEditCropCycles,
@@ -21,6 +23,7 @@ export type CropCycleActionState = {
   errors?: Partial<
     Record<
       | "plotId"
+      | "activityId"
       | "cropName"
       | "plantedOn"
       | "expectedHarvestOn"
@@ -52,6 +55,7 @@ function localizeValidationErrors(
 
   return {
     ...(errors.plotId ? { plotId: messages.invalidPlot } : {}),
+    ...(errors.activityId ? { activityId: getDictionary(locale).activities.assignment.invalid } : {}),
     ...(errors.cropName ? { cropName: messages.invalidCropName } : {}),
     ...(errors.plantedOn ? { plantedOn: messages.invalidDate } : {}),
     ...(errors.expectedHarvestOn
@@ -96,6 +100,7 @@ function readCycleInput(formData: FormData) {
     cultivatedAreaHectares: formData.get("cultivatedAreaHectares"),
     status: formData.get("status"),
     notes: formData.get("notes"),
+    activityId: formData.has("activityId") ? formData.get("activityId") : undefined,
   });
 }
 
@@ -112,7 +117,7 @@ async function getTrustedPlot(farmId: string, plotId: string) {
 }
 
 function revalidateCropCyclePaths(locale: Locale, cycleId?: string) {
-  revalidatePath(`/${locale}/app`);
+  revalidatePath(`/${locale}/app`, "layout");
   revalidatePath(`/${locale}/app/crop-cycles`);
   if (cycleId) revalidatePath(`/${locale}/app/crop-cycles/${cycleId}`);
 }
@@ -143,6 +148,11 @@ export async function createCropCycle(
   );
   if (plotError || !plot) return { message: dictionary.errors.invalidPlot };
 
+  if (!await isCurrentFarmActivity(supabase, workspace.farm.id, validated.data.activityId)) {
+    const message = getDictionary(locale).activities.assignment.invalid;
+    return { message, errors: { activityId: message } };
+  }
+
   if (
     !validateAreaWithinPlot(
       validated.data.cultivatedAreaHectares,
@@ -159,7 +169,7 @@ export async function createCropCycle(
     .from("crop_cycles")
     .insert({
       farm_id: workspace.farm.id,
-      activity_id: plot.activity_id,
+      activity_id: newCycleActivity(validated.data.activityId, plot.activity_id),
       plot_id: plot.id,
       crop_name: validated.data.cropName,
       started_on: validated.data.plantedOn,
@@ -209,6 +219,11 @@ export async function updateCropCycle(
   );
   if (plotError || !plot) return { message: dictionary.errors.invalidPlot };
 
+  if (!await isCurrentFarmActivity(supabase, workspace.farm.id, validated.data.activityId)) {
+    const message = getDictionary(locale).activities.assignment.invalid;
+    return { message, errors: { activityId: message } };
+  }
+
   if (
     !validateAreaWithinPlot(
       validated.data.cultivatedAreaHectares,
@@ -224,7 +239,7 @@ export async function updateCropCycle(
   const { data, error } = await supabase
     .from("crop_cycles")
     .update({
-      activity_id: plot.activity_id,
+      ...activityAssignmentPatch(validated.data.activityId),
       plot_id: plot.id,
       crop_name: validated.data.cropName,
       started_on: validated.data.plantedOn,
