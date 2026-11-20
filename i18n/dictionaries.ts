@@ -1,8 +1,10 @@
 import type { Locale } from "@/i18n/config";
 import { activityDictionaries } from "@/i18n/activity-dictionaries";
+import { taskDictionaries } from "@/i18n/task-dictionaries";
 
 const dictionaries = {
   fr: {
+    tasks: taskDictionaries.fr,
     activities: activityDictionaries.fr,
     brandTagline: "La gestion agricole, simplement.",
     nav: {
@@ -15,6 +17,7 @@ const dictionaries = {
       plots: "Parcelles",
       cropCycles: "Cycles culturaux",
       activities: "Activités",
+      tasks: "Tâches",
       language: "العربية",
       languageLabel: "Passer en arabe",
       mainLabel: "Navigation de l’application",
@@ -87,6 +90,8 @@ const dictionaries = {
       mobilePlots: "Parcelles",
       mobileCycles: "Cultures",
       mobileActivities: "Activités",
+      mobileTasks: "Tâches",
+      mobileLogout: "Sortir",
     },
     dashboard: {
       eyebrow: "Tableau de bord",
@@ -341,6 +346,7 @@ const dictionaries = {
     },
   },
   ar: {
+    tasks: taskDictionaries.ar,
     activities: activityDictionaries.ar,
     brandTagline: "إدارة فلاحية بكل بساطة.",
     nav: {
@@ -353,6 +359,7 @@ const dictionaries = {
       plots: "القطع",
       cropCycles: "الدورات الزراعية",
       activities: "الأنشطة",
+      tasks: "المهام",
       language: "Français",
       languageLabel: "التبديل إلى الفرنسية",
       mainLabel: "التنقل داخل التطبيق",
@@ -423,6 +430,8 @@ const dictionaries = {
       mobilePlots: "القطع",
       mobileCycles: "الزراعات",
       mobileActivities: "الأنشطة",
+      mobileTasks: "المهام",
+      mobileLogout: "خروج",
     },
     dashboard: {
       eyebrow: "لوحة القيادة",
