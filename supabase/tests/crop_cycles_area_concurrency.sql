@@ -2,7 +2,45 @@
 
 -- dblink opens independent PostgreSQL sessions so both orderings exercise
 -- actual row-lock waits instead of sequential statements in one transaction.
-create extension if not exists dblink;
+select exists (
+  select 1 from pg_catalog.pg_extension where extname = 'dblink'
+) as dblink_preexisting
+\gset
+select exists (
+  select 1 from pg_catalog.pg_namespace where nspname = 'extensions'
+) as extensions_schema_preexisting
+\gset
+
+-- IF NOT EXISTS does not relocate an extension installed in another schema.
+-- Check its actual namespace before creating schemas or changing fixtures.
+do $$
+declare
+  dblink_schema name;
+begin
+  select n.nspname into dblink_schema
+  from pg_catalog.pg_extension as e
+  join pg_catalog.pg_namespace as n on n.oid = e.extnamespace
+  where e.extname = 'dblink';
+
+  if found and dblink_schema <> 'extensions' then
+    raise exception 'concurrency test requires dblink in schema "extensions"; found schema "%"',
+      dblink_schema;
+  end if;
+end;
+$$;
+
+create schema if not exists extensions;
+create extension if not exists dblink with schema extensions;
+
+-- A failed run closes its dblink sessions (rolling back open remote
+-- transactions), but may leave committed fixtures or helper functions. Make
+-- the next run self-cleaning while still requiring a disposable database.
+drop function if exists public.test_insert_cycle_for_concurrency(uuid, numeric);
+drop function if exists public.test_reduce_plot_area_for_concurrency(numeric);
+delete from public.farms
+where id = '26000000-0000-0000-0000-000000000001';
+delete from auth.users
+where id = '16000000-0000-0000-0000-000000000001';
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -72,14 +110,14 @@ begin
 end;
 $$;
 
-select dblink_connect(
+select extensions.dblink_connect(
   'cycle_connection',
   format(
     'host=127.0.0.1 port=%s dbname=%s user=%s application_name=mission3b_cycle_connection',
     current_setting('port'), current_database(), current_user
   )
 );
-select dblink_connect(
+select extensions.dblink_connect(
   'plot_connection',
   format(
     'host=127.0.0.1 port=%s dbname=%s user=%s application_name=mission3b_plot_connection',
@@ -87,10 +125,17 @@ select dblink_connect(
   )
 );
 
+-- Capture the PIDs from these exact connections rather than identifying
+-- waiters or blockers by application_name alone.
+create temporary table crop_cycle_concurrency_connections as
+select cycle_session.pid as cycle_pid, plot_session.pid as plot_pid
+from extensions.dblink('cycle_connection', 'select pg_backend_pid()') as cycle_session(pid integer)
+cross join extensions.dblink('plot_connection', 'select pg_backend_pid()') as plot_session(pid integer);
+
 -- Ordering A: the cycle insert holds FOR SHARE on the plot. The concurrent
 -- area reduction must wait, then observe the committed cycle and be rejected.
-select dblink_exec('cycle_connection', 'begin');
-select dblink_exec(
+select extensions.dblink_exec('cycle_connection', 'begin');
+select extensions.dblink_exec(
   'cycle_connection',
   $$
     insert into public.crop_cycles (
@@ -104,33 +149,43 @@ select dblink_exec(
     )
   $$
 );
-select dblink_send_query(
+select extensions.dblink_send_query(
   'plot_connection',
   'select public.test_reduce_plot_area_for_concurrency(5)'
 );
-select pg_sleep(0.5);
 
 do $$
+declare
+  deadline timestamptz := clock_timestamp() + interval '10 seconds';
 begin
-  if not exists (
-    select 1
-    from pg_catalog.pg_stat_activity
-    where application_name = 'mission3b_plot_connection'
-      and wait_event_type = 'Lock'
-  ) then
-    raise exception 'ordering A did not block the plot reduction on the cycle-held plot lock';
-  end if;
+  loop
+    perform pg_catalog.pg_stat_clear_snapshot();
+    exit when exists (
+      select 1
+      from pg_catalog.pg_stat_activity as waiter
+      cross join pg_temp.crop_cycle_concurrency_connections as connections
+      where waiter.pid = connections.plot_pid
+        and waiter.wait_event_type = 'Lock'
+        and connections.cycle_pid = any(pg_catalog.pg_blocking_pids(waiter.pid))
+    );
+
+    if clock_timestamp() >= deadline then
+      raise exception 'ordering A did not block the plot reduction on the cycle transaction within 10 seconds';
+    end if;
+
+    perform pg_sleep(0.01);
+  end loop;
 end;
 $$;
 
-select dblink_exec('cycle_connection', 'commit');
+select extensions.dblink_exec('cycle_connection', 'commit');
 
 do $$
 declare
   outcome text;
 begin
   select result into outcome
-  from dblink_get_result('plot_connection') as result(result text);
+  from extensions.dblink_get_result('plot_connection') as result(result text);
 
   if outcome <> 'rejected' then
     raise exception 'ordering A plot reduction was not rejected: %', outcome;
@@ -139,7 +194,7 @@ begin
   -- libpq requires one extra fetch returning an empty set before the named
   -- connection can accept another command.
   perform result
-  from dblink_get_result('plot_connection') as result(result text);
+  from extensions.dblink_get_result('plot_connection') as result(result text);
 end;
 $$;
 
@@ -151,8 +206,8 @@ where id = '36000000-0000-0000-0000-000000000001';
 
 -- Ordering B: the plot reduction holds FOR NO KEY UPDATE first. The cycle
 -- insert must wait, then read the committed smaller area and be rejected.
-select dblink_exec('plot_connection', 'begin');
-select dblink_exec(
+select extensions.dblink_exec('plot_connection', 'begin');
+select extensions.dblink_exec(
   'plot_connection',
   $$
     update public.plots
@@ -160,7 +215,7 @@ select dblink_exec(
     where id = '36000000-0000-0000-0000-000000000001'
   $$
 );
-select dblink_send_query(
+select extensions.dblink_send_query(
   'cycle_connection',
   $$
     select public.test_insert_cycle_for_concurrency(
@@ -169,36 +224,46 @@ select dblink_send_query(
     )
   $$
 );
-select pg_sleep(0.5);
 
 do $$
+declare
+  deadline timestamptz := clock_timestamp() + interval '10 seconds';
 begin
-  if not exists (
-    select 1
-    from pg_catalog.pg_stat_activity
-    where application_name = 'mission3b_cycle_connection'
-      and wait_event_type = 'Lock'
-  ) then
-    raise exception 'ordering B did not block the cycle insert on the plot-held lock';
-  end if;
+  loop
+    perform pg_catalog.pg_stat_clear_snapshot();
+    exit when exists (
+      select 1
+      from pg_catalog.pg_stat_activity as waiter
+      cross join pg_temp.crop_cycle_concurrency_connections as connections
+      where waiter.pid = connections.cycle_pid
+        and waiter.wait_event_type = 'Lock'
+        and connections.plot_pid = any(pg_catalog.pg_blocking_pids(waiter.pid))
+    );
+
+    if clock_timestamp() >= deadline then
+      raise exception 'ordering B did not block the cycle insert on the plot transaction within 10 seconds';
+    end if;
+
+    perform pg_sleep(0.01);
+  end loop;
 end;
 $$;
 
-select dblink_exec('plot_connection', 'commit');
+select extensions.dblink_exec('plot_connection', 'commit');
 
 do $$
 declare
   outcome text;
 begin
   select result into outcome
-  from dblink_get_result('cycle_connection') as result(result text);
+  from extensions.dblink_get_result('cycle_connection') as result(result text);
 
   if outcome <> 'rejected' then
     raise exception 'ordering B crop-cycle insert was not rejected: %', outcome;
   end if;
 
   perform result
-  from dblink_get_result('cycle_connection') as result(result text);
+  from extensions.dblink_get_result('cycle_connection') as result(result text);
 end;
 $$;
 
@@ -221,8 +286,10 @@ begin
 end;
 $$;
 
-select dblink_disconnect('cycle_connection');
-select dblink_disconnect('plot_connection');
+select extensions.dblink_disconnect('cycle_connection');
+select extensions.dblink_disconnect('plot_connection');
+
+drop table pg_temp.crop_cycle_concurrency_connections;
 
 drop function public.test_insert_cycle_for_concurrency(uuid, numeric);
 drop function public.test_reduce_plot_area_for_concurrency(numeric);
@@ -231,3 +298,13 @@ delete from public.farms
 where id = '26000000-0000-0000-0000-000000000001';
 delete from auth.users
 where id = '16000000-0000-0000-0000-000000000001';
+
+\if :dblink_preexisting
+\else
+drop extension dblink;
+\endif
+
+\if :extensions_schema_preexisting
+\else
+drop schema extensions;
+\endif
