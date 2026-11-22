@@ -72,6 +72,7 @@ the data access. The browser never supplies a trusted user identifier.
 - `/{locale}/app/activities`: economic activity categories, filters, details, and owner management
 - `/{locale}/app/tasks`: task lists, reminders, filters, details, and permitted task management
 - `/{locale}/app/livestock`: animal groups, event history, linked tasks and recorded ledger lines
+- `/{locale}/app/operations`: dated field work, plot/crop history, filters and explicit existing-expense attribution
 
 Supported locale values are `fr` and `ar`. The Arabic layout sets `dir="rtl"`.
 Displayed monetary amounts use Tunisian dinar formatting with three fractional
@@ -122,7 +123,31 @@ create ledger transactions automatically. No amounts are inferred.
 
 Groups link to their full task list and can prefill a new task with a verified
 same-farm group/activity. Task details link back to the animal group. Mobile
-navigation retains six destinations; sign-out is in the mobile header.
+navigation retains six destinations; the mobile header's More menu contains
+economic categories and sign-out after Mission 5.
+
+Mission 5 requires `20261120000100_agricultural_operations.sql` after the existing
+four migrations, before deploying the new application screens. It adds the
+dedicated field-operations table, same-farm/plot reference keys, RLS, safe joined
+views and expense-link integrity triggers. It does not modify existing data or
+require additional environment variables.
+
+Open Travaux / الأشغال, choose type, date and plot, then save. Crop cycle and
+additional details are optional. Owners and workers create/edit work; only
+owners delete, with confirmation. Accountants read. Plot, cycle and task detail
+pages show related history and prefill verified context for new work. Deleting
+a task clears its optional link without removing the recorded operation.
+
+To display a cost, an owner explicitly selects one already-recorded whole
+expense line in the optional financial section. It must match the category and
+any crop cycle specified by the ledger header, and cannot belong to an animal
+group or another operation. This module never creates a ledger entry or infers
+a cost from quantity. With no eligible recorded expense, leave the link empty;
+there is no new financial-entry workflow in this mission. A later legitimate
+ledger price correction changes the displayed amount without duplicating it.
+Incompatible header reclassification and deleting an attributed expense are
+blocked until an owner unlinks it. Workers can edit the field details of an
+attributed operation while its financial context is preserved.
 
 ## Validation
 
@@ -148,8 +173,15 @@ matrix, derived reminder queries, and unassignment when a member leaves.
 `livestock_crud_rls.sql` additionally verifies group/event permissions, counts,
 history preservation, the four independent group deletion dependencies,
 cross-farm references, task links and recorded financial amounts.
-There are nine SQL suites in total; run them all against the same disposable
-database after applying the four migrations in filename order.
+`operations_crud_rls.sql` verifies operation CRUD, types, quantity/unit rules,
+farm isolation, foreign references, audit/column permissions, role restrictions,
+expense attribution and live ledger amounts, unchanged ledger totals/task
+status, parent deletion protections, task detachment and farm/profile deletion.
+`operations_expense_concurrency.sql` tests both expense-header/attribution lock
+orderings, concurrent duplicate claims and editing an existing operation while
+the ledger changes. Both remote sessions use the authenticated owner and RLS.
+There are eleven SQL suites in total; run them all against the same disposable
+database after applying the five migrations in filename order.
 The area concurrency suite uses two independent `dblink` sessions and commits
 fixtures to exercise real lock waits for both INSERT and UPDATE orderings
 against a concurrent plot resize.
@@ -166,3 +198,12 @@ helpers, or a newly installed extension/schema may remain. A rerun cleans stale
 fixtures/helpers; discard the disposable database after a failure to guarantee
 full cleanup. Do not run parallel copies against the same database because the
 test uses fixed fixture IDs.
+
+Both concurrency suites require the server's `dblink` module and a privileged
+test-runner connection that can install it and inspect blocking PIDs. Their
+loopback connections use the current database, port and administrative username;
+configure local PostgreSQL authentication (for example a local password file)
+if required. No production connection string is embedded. These tests are
+compatible with local Supabase PostgreSQL when those capabilities are enabled;
+running them on an ordinary disposable PostgreSQL instance with a minimal Auth
+shim does not validate Supabase Auth, PostgREST or browser integration.

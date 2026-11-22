@@ -2,9 +2,11 @@ import type { Locale } from "@/i18n/config";
 import { activityDictionaries } from "@/i18n/activity-dictionaries";
 import { taskDictionaries } from "@/i18n/task-dictionaries";
 import { livestockDictionaries } from "@/i18n/livestock-dictionaries";
+import { operationDictionaries } from "@/i18n/operation-dictionaries";
 
 const dictionaries = {
   fr: {
+    operations: operationDictionaries.fr,
     livestock: livestockDictionaries.fr,
     tasks: taskDictionaries.fr,
     activities: activityDictionaries.fr,
@@ -21,6 +23,7 @@ const dictionaries = {
       activities: "Activités",
       tasks: "Tâches",
       livestock: "Élevage",
+      operations: "Travaux",
       language: "العربية",
       languageLabel: "Passer en arabe",
       mainLabel: "Navigation de l’application",
@@ -95,6 +98,8 @@ const dictionaries = {
       mobileActivities: "Activités",
       mobileTasks: "Tâches",
       mobileLivestock: "Élevage",
+      mobileOperations: "Travaux",
+      mobileMore: "Plus",
       mobileLogout: "Sortir",
     },
     dashboard: {
@@ -350,6 +355,7 @@ const dictionaries = {
     },
   },
   ar: {
+    operations: operationDictionaries.ar,
     livestock: livestockDictionaries.ar,
     tasks: taskDictionaries.ar,
     activities: activityDictionaries.ar,
@@ -366,6 +372,7 @@ const dictionaries = {
       activities: "الأنشطة",
       tasks: "المهام",
       livestock: "الماشية",
+      operations: "الأشغال",
       language: "Français",
       languageLabel: "التبديل إلى الفرنسية",
       mainLabel: "التنقل داخل التطبيق",
@@ -438,6 +445,8 @@ const dictionaries = {
       mobileActivities: "الأنشطة",
       mobileTasks: "المهام",
       mobileLivestock: "الماشية",
+      mobileOperations: "الأشغال",
+      mobileMore: "المزيد",
       mobileLogout: "خروج",
     },
     dashboard: {

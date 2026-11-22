@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { DeletePlotControl } from "@/components/delete-plot-control";
 import { RecordActivity } from "@/components/record-activity";
+import { OperationHistory } from "@/components/operation-history";
 import { PlotMissing } from "@/components/plot-missing";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
@@ -98,6 +99,7 @@ export default async function PlotDetailsPage({
       </section>
 
       <RecordActivity locale={locale} activityId={plot.activity_id} activities={activities} />
+      <OperationHistory locale={locale} plotId={plot.id} />
 
       <footer className="record-meta">
         <span>{dictionary.details.createdAt}: {formatDate(plot.created_at, locale)}</span>
