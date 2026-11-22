@@ -24,7 +24,25 @@ ignored by Git and should not be committed.
 
 ## Database setup
 
-Apply all files in `supabase/migrations` in filename order to a clean database.
+For a fresh application schema, apply `supabase/roles.sql` as `postgres` before
+all files in `supabase/migrations`, then apply those migrations in filename order.
+For a separately approved Supabase CLI deployment, include `--include-roles`:
+the CLI processes `roles.sql` before pending application migrations. Merely
+adding the file does not execute it or deploy the database.
+
+The bootstrap removes `anon`/`authenticated` schema-specific table defaults
+for future objects created by `postgres` in `public`. The migrations then grant
+the intended table/column permissions explicitly, with RLS controlling each
+member role. This preserves Storage defaults, `service_role` grants and defaults
+belonging to other creator roles. It also covers view grants. It does not change
+global defaults or permissions on already-existing objects.
+
+Inspect default-privilege origins before initialization: per-schema revocation
+cannot remove globally granted privileges. If global client table grants exist,
+stop and review their effect across schemas rather than applying an automatic
+global revoke. Existing application tables also need a separate ACL review.
+This bootstrap is not a migration-history repair or a production reset.
+
 The initial migration creates the Mission 1 schema, triggers, grants, and RLS
 policies. The Mission 2 profile policy lets a signed-in user create only their
 own missing profile; it cannot create or modify another user's profile.
@@ -158,7 +176,9 @@ npm run typecheck
 npm run build
 ```
 
-For database validation, apply all migrations to a clean disposable database,
+For database validation, use clean disposable PostgreSQL 17+ with the Supabase
+Auth schema/claims helper, `anon`, `authenticated`, `service_role`, and the
+`storage` schema. Apply `supabase/roles.sql` as `postgres`, then all five migrations,
 then run every SQL file in `supabase/tests` using `psql` with `-X`,
 `-v ON_ERROR_STOP=1`, and `-f <test-file>`. The RLS suites roll back their fixtures.
 This includes `activities_crud_rls.sql`, which verifies the role matrix,
@@ -180,8 +200,18 @@ status, parent deletion protections, task detachment and farm/profile deletion.
 `operations_expense_concurrency.sql` tests both expense-header/attribution lock
 orderings, concurrent duplicate claims and editing an existing operation while
 the ledger changes. Both remote sessions use the authenticated owner and RLS.
-There are eleven SQL suites in total; run them all against the same disposable
-database after applying the five migrations in filename order.
+`bootstrap_default_privileges.sql` reconstructs schema-specific defaults inside
+a rolled-back transaction, applies the real bootstrap, and verifies effective
+permissions, Storage/service-role preservation, and the global-grant additive
+counterexample. It demonstrates why schema-only revocation cannot remove global
+grants and why default changes do not repair existing table ACLs.
+`bootstrap_privileges_rls.sql` checks effective table/column grants, role-only
+membership updates, operation-column restrictions, forbidden TRUNCATE and other
+administrative privileges, protected functions, and successful/rejected
+Owner/Worker/Accountant operations and farm isolation. These suites require
+PostgreSQL 17+ to include the MAINTAIN privilege in their assertions.
+There are thirteen SQL suites in total; run them all against the same disposable
+database after applying the bootstrap and five migrations in filename order.
 The area concurrency suite uses two independent `dblink` sessions and commits
 fixtures to exercise real lock waits for both INSERT and UPDATE orderings
 against a concurrent plot resize.
