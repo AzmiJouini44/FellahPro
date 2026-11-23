@@ -46,7 +46,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
             <p>{dictionary.brandTagline}</p>
           </div>
         </section>
-        <section className="feature-strip" aria-label="Avantages">
+        <section className="feature-strip" aria-label={dictionary.home.featuresLabel}>
           <div className="shell feature-grid">
             {[
               dictionary.home.featureOne,

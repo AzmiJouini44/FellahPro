@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getDirection, isLocale, locales } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 
 import "../globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "FellahPro",
-    template: "%s · FellahPro",
-  },
-  description: "Gestion agricole simple pour les agriculteurs tunisiens.",
-};
+export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  return {
+    title: { default: "FellahPro", template: "%s · FellahPro" },
+    description: getDictionary(locale).metadata.description,
+  };
+}
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));

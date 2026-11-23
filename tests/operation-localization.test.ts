@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { operationDictionaries } from "../i18n/operation-dictionaries";
 import { operationTypes, operationUnits } from "../lib/operation-validation";
+import { locales } from "../i18n/config";
 function keys(value: object, path = ""): string[] {
   return Object.entries(value).flatMap(([key, child]) =>
     typeof child === "string"
@@ -9,12 +10,13 @@ function keys(value: object, path = ""): string[] {
       : keys(child, path + key + "."),
   );
 }
-test("French/Arabic operation labels match and cover every operation, unit, error and financial explanation", () => {
+test("all operation locales cover every operation, unit, error and financial explanation", () => {
   assert.deepEqual(
     keys(operationDictionaries.fr).sort(),
     keys(operationDictionaries.ar).sort(),
   );
-  for (const locale of ["fr", "ar"] as const) {
+  for (const locale of locales) {
+    assert.deepEqual(keys(operationDictionaries.fr).sort(), keys(operationDictionaries[locale]).sort());
     for (const type of operationTypes)
       assert.ok(operationDictionaries[locale].types[type]);
     for (const unit of operationUnits)

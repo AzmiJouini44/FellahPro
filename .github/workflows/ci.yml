@@ -39,3 +39,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install Chromium for localization checks
+        run: npx playwright install --with-deps chromium
+
+      - name: Localization browser tests (loopback mock Supabase)
+        run: npm run test:e2e

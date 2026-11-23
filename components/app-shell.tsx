@@ -7,6 +7,7 @@ import { getDictionary } from "@/i18n/dictionaries";
 import { SubmitButton } from "./submit-button";
 import { AppNavLink } from "./app-nav-link";
 import { MobileMoreNavigation } from "./mobile-more-navigation";
+import { LanguageSelector } from "./language-selector";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -17,7 +18,6 @@ type AppShellProps = {
 
 export function AppShell({ children, locale, email, farmName }: AppShellProps) {
   const dictionary = getDictionary(locale);
-  const alternateLocale = locale === "fr" ? "ar" : "fr";
 
   return (
     <div className="app-frame">
@@ -32,6 +32,7 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
           <span>{dictionary.appShell.workspaceLabel}</span>
           <strong>{farmName}</strong>
         </div>
+        <LanguageSelector locale={locale} labels={dictionary.languageSelector} />
         <nav className="app-nav" aria-label={dictionary.nav.mainLabel}>
           <AppNavLink className="app-nav-link" href={`/${locale}/app#overview`}>
             <span aria-hidden="true">⌂</span>
@@ -75,13 +76,6 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span>{dictionary.appShell.accountLabel}</span>
             {email ? <strong dir="ltr">{email}</strong> : null}
           </div>
-          <Link
-            className="language-link"
-            href={`/${alternateLocale}/app`}
-            aria-label={dictionary.nav.languageLabel}
-          >
-            {dictionary.nav.language}
-          </Link>
           <form action={logout}>
             <input name="locale" type="hidden" value={locale} />
             <SubmitButton
@@ -102,9 +96,7 @@ export function AppShell({ children, locale, email, farmName }: AppShellProps) {
             <span>FellahPro</span>
           </Link>
           <div className="mobile-app-controls">
-            <Link className="language-link" href={`/${alternateLocale}/app`} aria-label={dictionary.nav.languageLabel}>
-              {dictionary.nav.language}
-            </Link>
+            <LanguageSelector locale={locale} labels={dictionary.languageSelector} compact />
             <MobileMoreNavigation locale={locale} />
           </div>
         </header>

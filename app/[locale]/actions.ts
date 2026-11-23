@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { defaultLocale, isLocale, type Locale } from "@/i18n/config";
+import { defaultLocale, getProfileLocale, isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { requireAuthenticatedContext } from "@/lib/auth";
 import {
@@ -67,7 +67,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName, locale },
+      data: { full_name: fullName, locale: getProfileLocale(locale) },
       ...(origin ? { emailRedirectTo: `${origin}/${locale}/auth/confirm` } : {}),
     },
   });
@@ -108,7 +108,7 @@ export async function createFirstFarm(
     {
       id: user.id,
       full_name: fullName,
-      locale,
+      locale: getProfileLocale(locale),
     },
     { onConflict: "id" },
   );

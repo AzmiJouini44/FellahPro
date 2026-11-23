@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { locales } from "../i18n/config";
 
 import {
   formatAreaHectares,
@@ -13,6 +14,7 @@ import {
 test("number formatting follows the selected application locale", () => {
   assert.equal(getNumberLocale("fr"), "fr-TN");
   assert.equal(getNumberLocale("ar"), "ar-TN");
+  assert.equal(getNumberLocale("aeb"), "ar-TN");
 });
 
 test("TND formatting uses three fractional digits", () => {
@@ -34,7 +36,17 @@ test("plot areas and dates follow the selected Tunisian locale", () => {
 test("activity counts are localized and audit-date display stays on the UTC filter day", () => {
   assert.ok(formatCount(1234, "ar").length > 0);
   assert.ok(formatCount(1234, "fr").length > 0);
-  for (const locale of ["fr", "ar"] as const) {
+  for (const locale of locales) {
     assert.equal(formatUtcDate("2026-01-01T23:30:00Z", locale), formatUtcDate("2026-01-01T00:00:00Z", locale));
   }
+});
+
+test("Tunisian Arabic uses Tunisian Arabic dates, hectares, counts and three-decimal dinars", () => {
+  assert.equal(formatTnd(12.5, "aeb"), formatTnd(12.5, "ar"));
+  assert.equal(formatAreaHectares(12.375, "aeb"), formatAreaHectares(12.375, "ar"));
+  assert.equal(formatCount(1234, "aeb"), formatCount(1234, "ar"));
+  assert.equal(formatDate("2026-11-19T00:00:00Z", "aeb"), formatDate("2026-11-19T00:00:00Z", "ar"));
+  const number = new Intl.NumberFormat(getNumberLocale("aeb"), { style: "currency", currency: "TND" });
+  assert.equal(number.resolvedOptions().maximumFractionDigits, 3);
+  assert.equal(number.resolvedOptions().minimumFractionDigits, 3);
 });

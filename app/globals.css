@@ -91,10 +91,81 @@ textarea {
   gap: 12px;
 }
 
-.language-link {
+.language-selector {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  margin-block: 12px;
+}
+
+.language-selector label {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
+}
+
+.language-selector select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding-block: 8px;
+  padding-inline: 10px 24px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+
+.language-selector select:focus-visible {
+  border-color: var(--primary);
+  outline: 3px solid color-mix(in srgb, var(--primary) 25%, transparent);
+  outline-offset: 2px;
+}
+
+.language-selector select:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.language-selector-compact {
+  width: clamp(7rem, 24vw, 9rem);
+  flex: none;
+  gap: 2px;
+  margin-block: 6px;
+}
+
+.language-selector .field-error {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .header-inner {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-block: 10px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mobile-app-header .brand {
+    gap: 6px;
+    font-size: 1rem;
+  }
+
+  .mobile-app-header .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobile-more-navigation > summary {
+    font-size: 0.85rem;
+  }
 }
 
 .button {
@@ -293,7 +364,12 @@ h1 {
     var(--background);
 }
 
-.auth-brand {
+.auth-header {
+  display: flex;
+  width: min(100%, 460px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 28px;
 }
 
@@ -595,7 +671,7 @@ h1 {
   min-height: 68px;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
   border-bottom: 1px solid var(--border);
   padding-inline: 16px;
   background: color-mix(in srgb, var(--background) 94%, transparent);
@@ -1588,6 +1664,7 @@ h1 {
     display: flex;
     min-height: 100vh;
     max-height: 100vh;
+    overflow-y: auto;
     flex-direction: column;
     border-inline-end: 1px solid var(--border);
     padding: 28px 22px;
@@ -1745,7 +1822,7 @@ h1 {
 }
 
 /* Livestock history shares the existing farm module forms and surfaces. */
-.mobile-app-controls { display: flex; align-items: center; gap: 12px; }
+.mobile-app-controls { display: flex; align-items: center; gap: 8px; }
 .mobile-logout { min-height: 44px; min-width: 44px; padding: 4px; border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: .8rem; font-weight: 700; }
 .livestock-page, .livestock-form { display: grid; gap: 24px; }
 .livestock-page h1, .livestock-card h2 { overflow-wrap: anywhere; }
@@ -1821,6 +1898,7 @@ h1 {
 .operation-detail-fields dt { color: var(--muted); font-size: .85rem; }
 .operation-detail-fields dd { margin: 0; overflow-wrap: anywhere; }
 .operation-detail-fields a, .operation-history a:not(.button) { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.operation-history > .field-hint { margin-block: 14px; }
 .operation-notes { white-space: pre-wrap; overflow-wrap: anywhere; }
 .operation-expense-amount { font-size: 1.6rem; }
 .operation-history ul { display: grid; gap: 14px; margin: 18px 0; padding: 0; list-style: none; }
