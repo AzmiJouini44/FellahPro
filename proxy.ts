@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { defaultLocale, isLocale } from "@/i18n/config";
+import { isLocale } from "@/i18n/config";
+import { getPreferredLocale, localeCookieName } from "@/i18n/preference";
 import { updateSession } from "@/utils/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
@@ -9,7 +10,8 @@ export async function proxy(request: NextRequest) {
 
   if (!isLocale(requestedLocale)) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = `/${defaultLocale}${request.nextUrl.pathname}`;
+    const preferredLocale = getPreferredLocale(request.cookies.get(localeCookieName)?.value);
+    redirectUrl.pathname = `/${preferredLocale}${request.nextUrl.pathname}`;
     return NextResponse.redirect(redirectUrl);
   }
 

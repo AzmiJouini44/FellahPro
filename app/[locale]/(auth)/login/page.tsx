@@ -7,7 +7,11 @@ import { SubmitButton } from "@/components/submit-button";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
-export const metadata: Metadata = { title: "Connexion" };
+export async function generateMetadata({ params }: PageProps<"/[locale]/login">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  return { title: getDictionary(locale).metadata.login };
+}
 export const instant = false;
 
 export default async function LoginPage({

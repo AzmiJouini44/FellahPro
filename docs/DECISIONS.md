@@ -410,6 +410,52 @@ More menu. French and Arabic share the same labels, RTL layout and Tunisian
 currency formatting. No notifications, agricultural prescriptions or automatic
 task/crop status changes are introduced.
 
+## Languages and presentation preferences
+
+The existing route-based dictionaries now support `fr` (Français), `ar`
+(Modern Standard Arabic) and `aeb` (تونسي, Tunisian Arabic). Tunisian Arabic has
+its own complete dictionary rather than falling back to French or formal Arabic.
+Both Arabic locales use RTL; French uses LTR. Numbers, hectares, dates and TND
+retain Tunisian formatting (`ar-TN` for both Arabic locales, `fr-TN` for French),
+including three decimal places for dinars and the existing UTC/calendar rules.
+
+A labelled native language select is available above the desktop sidebar
+navigation, in the mobile header, and on public/authentication/onboarding pages.
+Changing it validates the locale in a Server Action and stores only
+`fellahpro_locale`, an HttpOnly, SameSite=Lax, one-year, path-wide cookie (Secure
+in production). It never changes authentication cookies, identity, membership
+or workspace selection. The proxy uses this validated preference only when a
+URL has no supported locale; explicit localized URLs remain authoritative and
+prefetches do not write preferences. There was no prior preference cookie.
+
+The selector replaces only the URL's locale segment and preserves record IDs,
+raw query filters, pagination, and fragment. A same-origin document navigation
+updates the root `lang` and `dir` together; unsaved form edits are not carried
+across that navigation. Links and subsequent actions use the new locale.
+
+No database migration is needed. The existing `profiles.locale` constraint
+supports `fr` and `ar`; signup metadata and first-farm profile writes map `aeb`
+to `ar`. The independent presentation cookie retains the precise choice.
+Switching languages itself performs no profile or other database write.
+
+Dictionary tests check all locale keys, nonempty text, interpolation arguments,
+Arabic-script coverage, URL safety and cookie validation. Playwright tests use
+a production build and a loopback-only mock Supabase API with fictional sessions
+to exercise persistence, auth guards, membership UI, route context, signup and
+onboarding compatibility, action failure, and desktop/mobile RTL/LTR layout.
+These tests do not validate hosted Supabase Auth or production RLS. Existing
+service authorization tests continue to cover the role matrix and farm isolation.
+
+Browser regressions also exposed background Supabase session initialization
+reading the clock during Cache Components prefetches, even after `cookies()`
+was awaited. The authenticated server client now awaits `connection()` before
+construction so the entire session lifecycle starts at request time. Cookie
+handling, RLS and authorization remain unchanged.
+
+The feature branch is excluded from automatic Vercel Git deployments in
+`vercel.json`, so opening the PR does not deploy unmerged work. Other branches,
+including `main`, retain Vercel's normal deployment behavior.
+
 ## Deliberately deferred
 
 - Farm switching remains deferred.

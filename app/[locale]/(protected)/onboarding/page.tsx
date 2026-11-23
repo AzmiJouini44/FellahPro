@@ -3,11 +3,16 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { OnboardingForm } from "@/components/onboarding-form";
+import { LanguageSelector } from "@/components/language-selector";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getCurrentWorkspace } from "@/lib/workspace";
 
-export const metadata: Metadata = { title: "Configuration" };
+export async function generateMetadata({ params }: PageProps<"/[locale]/onboarding">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  return { title: getDictionary(locale).metadata.onboarding };
+}
 export const instant = false;
 
 export default async function OnboardingPage({
@@ -26,7 +31,6 @@ export default async function OnboardingPage({
   }
 
   const dictionary = getDictionary(locale);
-  const alternateLocale = locale === "fr" ? "ar" : "fr";
 
   return (
     <main className="onboarding-shell">
@@ -37,13 +41,7 @@ export default async function OnboardingPage({
           </span>
           <span>FellahPro</span>
         </Link>
-        <Link
-          className="language-link"
-          href={`/${alternateLocale}/onboarding`}
-          aria-label={dictionary.nav.languageLabel}
-        >
-          {dictionary.nav.language}
-        </Link>
+        <LanguageSelector locale={locale} labels={dictionary.languageSelector} compact />
       </header>
       <section className="onboarding-grid shell">
         <div className="onboarding-intro">

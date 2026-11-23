@@ -167,6 +167,22 @@ Incompatible header reclassification and deleting an attributed expense are
 blocked until an owner unlinks it. Workers can edit the field details of an
 attributed operation while its financial context is preserved.
 
+## Language selection
+
+Choose Français, العربية (Modern Standard Arabic) or تونسي (Tunisian Arabic)
+from the sidebar or mobile header. The same selector is available before login
+and during onboarding. Tunisian routes use `/aeb`; both Arabic choices are RTL.
+The selected language persists for one year in the `fellahpro_locale` cookie.
+Explicit localized links take precedence; opening `/` uses the saved choice.
+The preference is local to the browser, remains after sign-out, and does not
+change the signed-in user or selected farm. Switching preserves the current
+route, filters and fragment, but discards unsaved form input.
+
+No new environment variables, Supabase settings or migrations are required.
+`profiles.locale` continues to store only the existing `fr`/`ar` values; the
+browser preference distinguishes Tunisian Arabic. All three locales use the
+existing dictionaries and formatting helpers.
+
 ## Validation
 
 ```text
@@ -175,6 +191,23 @@ npm run lint
 npm run typecheck
 npm run build
 ```
+
+To run localization browser regressions:
+
+```text
+npx playwright install chromium
+npm run test:e2e
+```
+
+This command builds and starts the application on `127.0.0.1:3100`, with a
+fictional Supabase API bound to `127.0.0.1:54329`. It overrides public Supabase
+configuration in memory at build time, leaves `.env.local` untouched, and never
+connects to a hosted project. Both ports must be free. Chromium runs desktop
+and mobile checks, including a 320px layout, cookie/session preservation,
+route/query/fragment retention, membership controls, signup and onboarding.
+The mock verifies application integration only; it does not replace hosted
+Auth or database/RLS validation. CI installs Chromium and runs these checks.
+Screenshots/traces are written to ignored `test-results/` files.
 
 For database validation, use clean disposable PostgreSQL 17+ with the Supabase
 Auth schema/claims helper, `anon`, `authenticated`, `service_role`, and the

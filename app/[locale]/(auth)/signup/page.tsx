@@ -7,7 +7,11 @@ import { SubmitButton } from "@/components/submit-button";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
-export const metadata: Metadata = { title: "Créer un compte" };
+export async function generateMetadata({ params }: PageProps<"/[locale]/signup">): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) notFound();
+  return { title: getDictionary(locale).metadata.signup };
+}
 export const instant = false;
 
 export default async function SignupPage({

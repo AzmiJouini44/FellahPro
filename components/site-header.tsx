@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import { LanguageSelector } from "./language-selector";
 
 type SiteHeaderProps = {
   locale: Locale;
@@ -10,7 +11,6 @@ type SiteHeaderProps = {
 
 export function SiteHeader({ locale, isAuthenticated = false }: SiteHeaderProps) {
   const dictionary = getDictionary(locale);
-  const alternateLocale = locale === "fr" ? "ar" : "fr";
 
   return (
     <header className="site-header">
@@ -22,13 +22,7 @@ export function SiteHeader({ locale, isAuthenticated = false }: SiteHeaderProps)
           <span>FellahPro</span>
         </Link>
         <nav className="header-actions" aria-label={dictionary.nav.mainLabel}>
-          <Link
-            className="language-link"
-            href={`/${alternateLocale}`}
-            aria-label={dictionary.nav.languageLabel}
-          >
-            {dictionary.nav.language}
-          </Link>
+          <LanguageSelector locale={locale} labels={dictionary.languageSelector} compact />
           <Link
             className="button button-small button-secondary"
             href={isAuthenticated ? `/${locale}/app` : `/${locale}/login`}

@@ -1,9 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 import { getSupabasePublicConfig } from "@/utils/supabase/config";
 
 export async function createClient() {
+  // Session initialization reads the clock in a background promise. Keep the
+  // entire authenticated client lifecycle outside Cache Components prefetches.
+  await connection();
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabasePublicConfig();
 

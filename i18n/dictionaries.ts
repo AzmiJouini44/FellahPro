@@ -6,6 +6,25 @@ import { operationDictionaries } from "@/i18n/operation-dictionaries";
 
 const dictionaries = {
   fr: {
+    "languageSelector": {
+      "label": "Langue",
+      "pending": "Changement de langue…",
+      "error": "Impossible de changer la langue. Réessayez."
+    },
+    "metadata": {
+      "description": "Gestion agricole simple pour les agriculteurs tunisiens.",
+      "login": "Connexion",
+      "signup": "Créer un compte",
+      "onboarding": "Configuration"
+    },
+    "system": {
+      "errorTitle": "Impossible d’afficher cette page",
+      "errorDescription": "Un problème est survenu. Réessayez dans un instant.",
+      "retry": "Réessayer",
+      "notFoundTitle": "Page introuvable",
+      "notFoundDescription": "Cette page n’existe pas ou vous n’y avez pas accès.",
+      "home": "Retour à l’accueil"
+    },
     operations: operationDictionaries.fr,
     livestock: livestockDictionaries.fr,
     tasks: taskDictionaries.fr,
@@ -29,6 +48,7 @@ const dictionaries = {
       mainLabel: "Navigation de l’application",
     },
     home: {
+      featuresLabel: "Avantages",
       eyebrow: "Pensé pour les agriculteurs tunisiens",
       title: "Gardez votre ferme sous contrôle, sans complication.",
       description:
@@ -355,6 +375,25 @@ const dictionaries = {
     },
   },
   ar: {
+    "languageSelector": {
+      "label": "اللغة",
+      "pending": "جارٍ تغيير اللغة…",
+      "error": "تعذّر تغيير اللغة. أعد المحاولة."
+    },
+    "metadata": {
+      "description": "إدارة زراعية بسيطة للمزارعين التونسيين.",
+      "login": "تسجيل الدخول",
+      "signup": "إنشاء حساب",
+      "onboarding": "إعداد المزرعة"
+    },
+    "system": {
+      "errorTitle": "تعذّر عرض هذه الصفحة",
+      "errorDescription": "حدثت مشكلة. أعد المحاولة بعد قليل.",
+      "retry": "إعادة المحاولة",
+      "notFoundTitle": "الصفحة غير موجودة",
+      "notFoundDescription": "هذه الصفحة غير موجودة أو ليس لديك صلاحية الوصول إليها.",
+      "home": "العودة إلى الصفحة الرئيسية"
+    },
     operations: operationDictionaries.ar,
     livestock: livestockDictionaries.ar,
     tasks: taskDictionaries.ar,
@@ -378,6 +417,7 @@ const dictionaries = {
       mainLabel: "التنقل داخل التطبيق",
     },
     home: {
+      featuresLabel: "المزايا",
       eyebrow: "مصمّم للفلاحين التونسيين",
       title: "تابع ضيعتك بسهولة ووضوح.",
       description:
@@ -686,6 +726,354 @@ const dictionaries = {
       accountant: "محاسب",
       unknown: "عضو",
     },
+  },
+  aeb: {
+    "languageSelector": {
+      "label": "اللغة",
+      "pending": "نبدّلوا اللغة…",
+      "error": "ما نجمناش نبدّلوا اللغة. عاود جرّب."
+    },
+    "metadata": {
+      "description": "تسيير فلاحي ساهل للفلاّحة في تونس.",
+      "login": "الدخول",
+      "signup": "اعمل حساب",
+      "onboarding": "حضّر ضيعتك"
+    },
+    "system": {
+      "errorTitle": "ما نجمناش نوريولك الصفحة",
+      "errorDescription": "صارت مشكلة. استنّى شوية وعاود جرّب.",
+      "retry": "عاود جرّب",
+      "notFoundTitle": "الصفحة موش موجودة",
+      "notFoundDescription": "الصفحة هاذي موش موجودة ولا ما عندكش الحق تدخللها.",
+      "home": "ارجع للصفحة الرئيسية"
+    },
+    operations: operationDictionaries.aeb,
+    livestock: livestockDictionaries.aeb,
+    tasks: taskDictionaries.aeb,
+    activities: activityDictionaries.aeb,
+    "brandTagline": "تسيير ضيعتك، بالساهل.",
+    "nav": {
+      "home": "الرئيسية",
+      "login": "ادخل لحسابك",
+      "signup": "اعمل حساب",
+      "workspace": "فضائي",
+      "overview": "نظرة عامّة",
+      "farm": "ضيعتي",
+      "plots": "قطع الأرض",
+      "cropCycles": "المواسم الفلاحية",
+      "activities": "الأنشطة",
+      "tasks": "المهام",
+      "livestock": "تربية الماشية",
+      "operations": "الأشغال",
+      "language": "اللغة",
+      "languageLabel": "بدّل اللغة",
+      "mainLabel": "التنقّل في التطبيق"
+    },
+    "home": {
+      featuresLabel: "المزايا",
+      "eyebrow": "معمول للفلاّحة في تونس",
+      "title": "خلّي ضيعتك منظّمة، من غير تعقيد.",
+      "description": "تلقى في FellahPro زراعاتك، ماشيتك، شراياتك، مبيعاتك ومخزونك، في بلاصة واحدة واضحة وساهلة.",
+      "primaryAction": "ابدأ بلاش",
+      "secondaryAction": "عندي حساب من قبل",
+      "featureOne": "نظرة واضحة على ضيعتك",
+      "featureTwo": "أرقام موثوقة بالدينار التونسي",
+      "featureThree": "بالفرنسية، بالعربية وبالتونسي"
+    },
+    "auth": {
+      "loginTitle": "أهلا بيك",
+      "loginDescription": "ادخل لحسابك باش تلقى فضاء FellahPro متاعك.",
+      "signupTitle": "اعمل حسابك",
+      "signupDescription": "شوية معلومات وتكون واجد باش تبدأ.",
+      "fullName": "الاسم واللقب",
+      "email": "عنوان الإيميل",
+      "password": "كلمة السر",
+      "passwordHint": "8 حروف على الأقلّ",
+      "loginAction": "ادخل",
+      "loginPending": "ندخلوا للحساب…",
+      "signupAction": "اعمل حسابي",
+      "signupPending": "نعملوا الحساب…",
+      "noAccount": "ما عندكش حساب لتوّة؟",
+      "hasAccount": "عندك حساب من قبل؟",
+      "logout": "اخرج من الحساب",
+      "logoutPending": "نخرجوا من الحساب…",
+      "messages": {
+        "invalidForm": "ثبّت في المعلومات اللي كتبتها.",
+        "invalidCredentials": "الإيميل وإلا كلمة السر موش صحيحة.",
+        "signupFailed": "ما نجمناش نعملوا الحساب. عاود جرّب وإلا استعمل إيميل آخر.",
+        "checkEmail": "حسابك تعمل. شوف الإيميل باش تأكّد عنوانك.",
+        "confirmed": "الإيميل تأكّد. تنجم تكمّل توّة.",
+        "confirmationFailed": "رابط التأكيد موش صحيح وإلا وفات مدّتو."
+      }
+    },
+    "onboarding": {
+      "eyebrow": "أوّل إعداد",
+      "title": "نحضّروا فضاء ضيعتك.",
+      "description": "ثبّت في اسمك وسمّي ضيعتك. تولّي إنت المالك متاعها آليّا.",
+      "stepAccount": "حساب محمي",
+      "stepFarm": "اعمل الضيعة",
+      "fullName": "اسمك ولقبك",
+      "farmName": "اسم الضيعة",
+      "farmPlaceholder": "مثال: ضيعة البركة",
+      "farmHint": "تنجم تزيد فريقك من بعد.",
+      "submit": "اعمل فضائي",
+      "submitting": "نحضّروا الفضاء…",
+      "securityNote": "فضاء ضيعتك مفصول ومحمي بقواعد الأمان متاع قاعدة البيانات.",
+      "messages": {
+        "invalidForm": "اكتب اسمك واسم ضيعة صحيحين.",
+        "loadFailed": "ما نجمناش نثبّتوا في فضائك. عاود جرّب.",
+        "profileFailed": "ما نجمناش نسجّلوا ملفّك. عاود جرّب.",
+        "farmFailed": "ما نجمناش نعملوا الضيعة. عاود جرّب."
+      }
+    },
+    "appShell": {
+      "workspaceLabel": "فضاء الخدمة",
+      "accountLabel": "الحساب المفتوح",
+      "mobileHome": "الرئيسية",
+      "mobileFarm": "ضيعتي",
+      "mobilePlots": "قطع الأرض",
+      "mobileCycles": "المواسم",
+      "mobileActivities": "الأنشطة",
+      "mobileTasks": "المهام",
+      "mobileLivestock": "الماشية",
+      "mobileOperations": "الأشغال",
+      "mobileMore": "المزيد",
+      "mobileLogout": "خروج"
+    },
+    "dashboard": {
+      "eyebrow": "لوحة المتابعة",
+      "greeting": "عسلامة",
+      "fallbackName": "يا فلاّح",
+      "description": "فضاؤك واجد. الوحدات الجاية باش تستعمل نفس الأساس المحمي.",
+      "currentFarm": "الضيعة الحالية",
+      "role": "دورك",
+      "currency": "العملة",
+      "trackedBalance": "الرصيد المتابع",
+      "trackedBalanceHint": "المعلومات المالية باش تظهر هنا.",
+      "setupTitle": "الأساس واجد",
+      "setupDescription": "حسابك، ضيعتك وصلاحياتك كمالك تجهّزوا كيف ما يلزم.",
+      "nextTitle": "واجد للخدمة اليومية",
+      "nextDescription": "الزراعات، الماشية، المخزون والحسابات يستعملوا نفس الفضاء.",
+      "demo": "للتجربة",
+      "live": "حقيقي",
+      "cropCyclesSummary": "متابعة المواسم الفلاحية",
+      "cropCyclesSummaryHint": "معلومات حقيقية من الضيعة الحالية.",
+      "totalCycles": "الجملة",
+      "activeCycles": "جارية",
+      "plannedCycles": "مبرمجة",
+      "recentHarvests": "الجني والحصاد في آخر 30 نهار",
+      "viewCropCycles": "شوف المواسم"
+    },
+    "plots": {
+      "eyebrow": "تسيير الأرض",
+      "title": "قطع الأرض",
+      "description": "زيد وتابع القطع اللي تتكوّن منهم ضيعتك.",
+      "add": "زيد قطعة أرض",
+      "count": "قطع أرض مسجّلة",
+      "areaLabel": "المساحة",
+      "emptyTitle": "ما فما حتى قطعة أرض لتوّة",
+      "emptyDescription": "زيد أوّل قطعة أرض باش تبدأ تنظّم ضيعتك.",
+      "readOnly": "دورك يسمحلك تتفرّج على قطع الأرض، أما ما تنجمش تبدّلهم.",
+      "loading": "نحمّلوا قطع الأرض…",
+      "newPlot": {
+        "eyebrow": "قطعة أرض جديدة",
+        "title": "زيد قطعة أرض",
+        "description": "اكتب الاسم، المساحة والملاحظات اللي تنفعك."
+      },
+      "editPlot": {
+        "eyebrow": "بدّل قطعة الأرض",
+        "title": "حدّث قطعة الأرض",
+        "description": "صلّح المعلومات وبعد سجّل التبديلات."
+      },
+      "form": {
+        "name": "اسم قطعة الأرض",
+        "namePlaceholder": "مثال: زيتون القطعة الشمالية",
+        "area": "المساحة",
+        "hectares": "هك",
+        "notes": "ملاحظات",
+        "optional": "موش إجباري",
+        "notesPlaceholder": "المدخل، السقي وإلا ملاحظات تنفعك…",
+        "notesHint": "حتى لـ 2000 حرف.",
+        "create": "زيد القطعة",
+        "creating": "نزيدوا القطعة…",
+        "save": "سجّل",
+        "saving": "نسجّلوا…",
+        "cancel": "إلغاء"
+      },
+      "details": {
+        "eyebrow": "تفاصيل قطعة الأرض",
+        "area": "المساحة الكلّية",
+        "notes": "ملاحظات",
+        "noNotes": "ما فماش ملاحظات.",
+        "createdAt": "تعملت نهار",
+        "updatedAt": "تبدّلت نهار",
+        "edit": "بدّل",
+        "back": "ارجع لقطع الأرض"
+      },
+      "missing": {
+        "title": "قطعة الأرض موش موجودة",
+        "description": "القطعة هاذي موش موجودة وإلا موش تابعة لضيعتك الحالية.",
+        "back": "شوف قطع أرضي"
+      },
+      "delete": {
+        "action": "فسخ",
+        "title": "تحب تفسخ قطعة الأرض هاذي؟",
+        "description": "قطعة الأرض «{name}» باش تتفسخ نهائيّا كان ما هيش مربوطة بموسم فلاحي.",
+        "confirm": "أكّد الفسخ",
+        "deleting": "نفسخوا…",
+        "cancel": "خلّي القطعة"
+      },
+      "success": {
+        "created": "قطعة الأرض تعملت.",
+        "updated": "قطعة الأرض تبدّلت.",
+        "deleted": "قطعة الأرض تفسخت."
+      },
+      "errors": {
+        "invalidForm": "ثبّت في معلومات قطعة الأرض.",
+        "invalidName": "الاسم يلزمو يكون بين حرفين و120 حرف.",
+        "invalidArea": "اكتب مساحة أكبر من صفر وإلا صفر، حتى لثلاثة أرقام بعد الفاصلة.",
+        "notesTooLong": "الملاحظات ما تفوتش 2000 حرف.",
+        "createFailed": "ما نجمناش نزيدوا القطعة. عاود جرّب.",
+        "updateFailed": "ما نجمناش نبدّلوا القطعة. عاود جرّب.",
+        "deleteFailed": "ما نجمناش نفسخوا القطعة. عاود جرّب.",
+        "deleteRelated": "القطعة هاذي مستعملة في موسم فلاحي وما تنجمش تتفسخ.",
+        "forbiddenEdit": "دورك ما يسمحلكش تبدّل قطع الأرض.",
+        "forbiddenDelete": "المالك وحدو ينجم يفسخ قطعة أرض.",
+        "notFound": "القطعة موش موجودة وإلا ما تنجمش تشوفها في ضيعتك الحالية.",
+        "loadFailed": "ما نجمناش نحمّلوا قطع الأرض. عاود جرّب."
+      }
+    },
+    "cropCycles": {
+      "eyebrow": "متابعة الزراعات",
+      "title": "المواسم الفلاحية",
+      "description": "برمج المواسم، تابع الزراعات الجارية وسجّل الجني والحصاد.",
+      "add": "زيد موسم فلاحي",
+      "count": "مواسم معروضة",
+      "readOnly": "دورك يسمحلك تتفرّج على المواسم، أما ما تنجمش تبدّلهم.",
+      "emptyTitle": "ما فما حتى موسم فلاحي",
+      "emptyDescription": "زيد أوّل موسم باش تربط زراعة بقطعة من ضيعتك.",
+      "noResultsTitle": "ما فماش نتائج",
+      "noResultsDescription": "ما فما حتى موسم يوافق الاختيارات هاذي.",
+      "unknownPlot": "قطعة الأرض موش متاحة",
+      "notAvailable": "موش مسجّل",
+      "statuses": {
+        "planned": "مبرمج",
+        "active": "جاري",
+        "completed": "تمّ حصادو",
+        "cancelled": "تلغى"
+      },
+      "filters": {
+        "status": "الحالة",
+        "all": "المواسم الكل",
+        "plot": "قطعة الأرض",
+        "allPlots": "قطع الأرض الكل",
+        "crop": "الزراعة",
+        "cropPlaceholder": "لوّج على زراعة",
+        "apply": "صفّي",
+        "clear": "امسح الاختيارات"
+      },
+      "fields": {
+        "planted": "نهار الغراسة",
+        "expected": "الجني والحصاد المتوقّع",
+        "actual": "الجني والحصاد الفعلي",
+        "area": "المساحة المزروعة"
+      },
+      "newCycle": {
+        "eyebrow": "موسم جديد",
+        "title": "زيد موسم فلاحي",
+        "description": "اربط زراعة بقطعة أرض وبرمج وقت الجني وإلا الحصاد."
+      },
+      "editCycle": {
+        "eyebrow": "بدّل الموسم",
+        "title": "حدّث الموسم الفلاحي",
+        "description": "بدّل البرمجة، الحالة وإلا معلومات الجني والحصاد."
+      },
+      "noPlots": {
+        "title": "زيد قطعة أرض أوّلًا",
+        "description": "كل موسم فلاحي يلزمو يكون مربوط بقطعة من الضيعة هاذي.",
+        "action": "زيد قطعة أرض"
+      },
+      "form": {
+        "plot": "قطعة الأرض",
+        "selectPlot": "اختار قطعة أرض",
+        "plotHint": "اختار قطعة أرض من الضيعة الحالية.",
+        "plotAreaHint": "المساحة الكلّية للقطعة: {area} هك.",
+        "cropName": "الزراعة",
+        "cropPlaceholder": "مثال: قمح صلب",
+        "plantedOn": "نهار الغراسة",
+        "expectedHarvestOn": "نهار الجني وإلا الحصاد المتوقّع",
+        "actualHarvestOn": "نهار الجني وإلا الحصاد الفعلي",
+        "whenCompleted": "إجباري كان الموسم تحصد",
+        "status": "الحالة",
+        "cultivatedArea": "المساحة المزروعة",
+        "hectares": "هك",
+        "notes": "ملاحظات",
+        "optional": "موش إجباري",
+        "notesPlaceholder": "الصنف، السقي وإلا ملاحظات تنفعك…",
+        "notesHint": "حتى لـ 2000 حرف.",
+        "create": "زيد الموسم",
+        "creating": "نزيدوا الموسم…",
+        "save": "سجّل",
+        "saving": "نسجّلوا…",
+        "cancel": "إلغاء"
+      },
+      "details": {
+        "eyebrow": "تفاصيل الموسم الفلاحي",
+        "edit": "بدّل",
+        "notes": "ملاحظات",
+        "noNotes": "ما فماش ملاحظات.",
+        "createdAt": "تعمل نهار",
+        "updatedAt": "تبدّل نهار",
+        "back": "ارجع للمواسم"
+      },
+      "missing": {
+        "title": "الموسم موش موجود",
+        "description": "الموسم هذا موش موجود وإلا موش تابع لضيعتك الحالية.",
+        "back": "شوف المواسم"
+      },
+      "delete": {
+        "action": "فسخ",
+        "title": "تحب تفسخ الموسم هذا؟",
+        "description": "الموسم «{crop}» باش يتفسخ نهائيّا كان ما فما حتى سجلّ خدمة مربوط بيه.",
+        "confirm": "أكّد الفسخ",
+        "deleting": "نفسخوا…",
+        "cancel": "خلّي الموسم"
+      },
+      "success": {
+        "created": "الموسم الفلاحي تعمل.",
+        "updated": "الموسم الفلاحي تبدّل.",
+        "deleted": "الموسم الفلاحي تفسخ."
+      },
+      "errors": {
+        "invalidForm": "ثبّت في معلومات الموسم.",
+        "invalidPlot": "اختار قطعة أرض متاحة من الضيعة هاذي.",
+        "invalidCropName": "اسم الزراعة يلزمو يكون بين حرفين و120 حرف.",
+        "invalidDate": "اكتب تاريخ صحيح.",
+        "invalidDateRange": "الجني وإلا الحصاد ما ينجمش يكون قبل الغراسة.",
+        "actualRequired": "يلزم تاريخ الجني وإلا الحصاد الفعلي للموسم المحصود.",
+        "actualOnlyCompleted": "التاريخ الفعلي يتسجّل كان للمواسم المحصودة.",
+        "invalidArea": "اكتب مساحة أكبر من صفر وإلا صفر، حتى لثلاثة أرقام بعد الفاصلة.",
+        "areaExceedsPlot": "المساحة المزروعة ما تنجمش تفوت مساحة القطعة.",
+        "areaOrDateChanged": "القطعة وإلا التواريخ تبدّلوا. ثبّت في الموسم وعاود جرّب.",
+        "invalidStatus": "اختار حالة صحيحة.",
+        "notesTooLong": "الملاحظات ما تفوتش 2000 حرف.",
+        "createFailed": "ما نجمناش نزيدوا الموسم. عاود جرّب.",
+        "updateFailed": "ما نجمناش نبدّلوا الموسم. عاود جرّب.",
+        "updateRelated": "فما سجلاّت مربوطة بالموسم ما توافقش التبديل هذا.",
+        "deleteFailed": "ما نجمناش نفسخوا الموسم. عاود جرّب.",
+        "deleteRelated": "الموسم مربوط بمهام، حركات وإلا أشغال وما ينجمش يتفسخ.",
+        "forbiddenEdit": "دورك ما يسمحلكش تبدّل المواسم.",
+        "forbiddenDelete": "المالك وحدو ينجم يفسخ الموسم.",
+        "notFound": "الموسم موش موجود وإلا ما تنجمش تشوفو في الضيعة هاذي.",
+        "loadFailed": "ما نجمناش نحمّلوا المواسم. عاود جرّب."
+      }
+    },
+    "roles": {
+      "owner": "المالك",
+      "worker": "العامل",
+      "accountant": "المحاسب",
+      "unknown": "عضو"
+    }
   },
 } as const;
 

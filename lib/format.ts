@@ -1,7 +1,7 @@
 import type { Locale } from "../i18n/config";
 
 export function getNumberLocale(locale: Locale) {
-  return locale === "ar" ? "ar-TN" : "fr-TN";
+  return locale === "fr" ? "fr-TN" : "ar-TN";
 }
 
 export function formatCount(count: number, locale: Locale) {
